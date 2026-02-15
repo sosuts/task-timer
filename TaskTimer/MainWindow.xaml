@@ -1,0 +1,446 @@
+<Window x:Class="TaskTimer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        xmlns:vm="clr-namespace:TaskTimer.ViewModels"
+        xmlns:conv="clr-namespace:TaskTimer.Converters"
+        Title="{DynamicResource AppTitle}" Height="520" Width="380"
+        MinHeight="480" MinWidth="340"
+        WindowStartupLocation="CenterScreen"
+        Background="Transparent"
+        AllowsTransparency="True"
+        WindowStyle="None"
+        ResizeMode="CanResize"
+        FontFamily="{StaticResource AppFont}"
+        SizeChanged="Window_SizeChanged"
+        LocationChanged="Window_LocationChanged">
+
+    <Window.DataContext>
+        <vm:MainViewModel />
+    </Window.DataContext>
+
+    <Window.Resources>
+        <conv:TaskStateToStringConverter x:Key="StateToString" />
+        <conv:TaskStateToColorConverter x:Key="StateToColor" />
+        <conv:TaskCategoryToStringConverter x:Key="CategoryToString" />
+        <conv:TaskCategoryToColorConverter x:Key="CategoryToColor" />
+        <conv:BoolToVisibilityConverter x:Key="BoolToVis" />
+        <conv:NotNullToVisibilityConverter x:Key="NotNullToVis" />
+        <conv:TimeSpanToStringConverter x:Key="TimeSpanToStr" />
+        <conv:DateTimeToStringConverter x:Key="DateTimeToStr" />
+        <conv:NullableDateTimeToStringConverter x:Key="NullDateTimeToStr" />
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition x:Name="MainColumn" Width="*"/>
+            <ColumnDefinition x:Name="SidebarColumn" Width="Auto"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ===== メインパネル ===== -->
+        <Border Grid.Column="0" CornerRadius="16" Margin="8"
+                MouseLeftButtonDown="Border_MouseLeftButtonDown">
+            <Border.Effect>
+                <DropShadowEffect ShadowDepth="2" BlurRadius="20" Opacity="0.3" Color="Black"/>
+            </Border.Effect>
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#1B1F3B" Offset="0"/>
+                    <GradientStop Color="#2D1B69" Offset="0.5"/>
+                    <GradientStop Color="#1A2980" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- ===== Top Bar ===== -->
+                <Grid Grid.Row="0" Margin="16,12,16,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0" Text="{Binding AutoDetectStatus}"
+                               Foreground="#80FFFFFF" Style="{StaticResource MainAutoDetectStatusText}" VerticalAlignment="Center"/>
+
+                    <Button Grid.Column="2" Content="&#xE700;" FontFamily="Segoe MDL2 Assets"
+                            Command="{Binding ToggleSidebarCommand}" ToolTip="{DynamicResource TooltipHistory}"
+                            Style="{StaticResource MainIconButtonMedium}"
+                            Foreground="#80FFFFFF" Width="28" Height="28"/>
+
+                    <Button Grid.Column="3" Content="&#xE713;" FontFamily="Segoe MDL2 Assets"
+                            Command="{Binding OpenSettingsCommand}" ToolTip="{DynamicResource TooltipSettings}"
+                            Style="{StaticResource MainIconButtonMedium}"
+                            Foreground="#80FFFFFF" Width="28" Height="28"/>
+
+                    <Button Grid.Column="4" Content="&#xE949;" FontFamily="Segoe MDL2 Assets"
+                            Click="MinimizeButton_Click"
+                            ToolTip="{DynamicResource TooltipMinimize}"
+                            Style="{StaticResource MainIconButtonSmall}"
+                            Foreground="#80FFFFFF" Width="28" Height="28"/>
+
+                    <Button Grid.Column="5" Content="&#xE8BB;" FontFamily="Segoe MDL2 Assets"
+                            Click="CloseButton_Click"
+                            ToolTip="{DynamicResource TooltipClose}"
+                            Style="{StaticResource MainIconButtonSmall}"
+                            Foreground="#80FFFFFF" Width="28" Height="28"/>
+                </Grid>
+
+                <!-- ===== Toggle Tabs ===== -->
+                <Border Grid.Row="1" Margin="24,12,24,0" CornerRadius="8"
+                        Background="#20FFFFFF" Padding="4">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <CheckBox Grid.Column="0" Style="{StaticResource ToggleTab}" Content="{DynamicResource ToggleAuto}"
+                                  IsChecked="{Binding IsAutoDetectEnabled}"/>
+                        <CheckBox Grid.Column="1" Style="{StaticResource ToggleTab}" Content="{DynamicResource ToggleIdle}"
+                                  IsChecked="{Binding IsIdleDetectEnabled}"/>
+                        <CheckBox Grid.Column="2" Style="{StaticResource ToggleTab}" Content="{DynamicResource ToggleTop}"
+                                  IsChecked="{Binding IsAlwaysOnTop}"/>
+                    </Grid>
+                </Border>
+
+                <!-- ===== Digital Clock ===== -->
+                <StackPanel Grid.Row="2" HorizontalAlignment="Center" Margin="0,28,0,0">
+                    <TextBlock Text="{Binding CurrentTimeDisplay}"
+                               Style="{StaticResource MainClockText}"
+                               HorizontalAlignment="Center"
+                               FontFamily="Segoe UI Light, Segoe UI"/>
+                    <TextBlock Text="{Binding CurrentDateDisplay}"
+                               Style="{StaticResource MainDateText}"
+                               Foreground="#70FFFFFF"
+                               HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                </StackPanel>
+
+                <!-- ===== Elapsed / Task Info ===== -->
+                <Border Grid.Row="3" Margin="24,16,24,0" CornerRadius="10"
+                        Background="#18FFFFFF" Padding="14,10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Task Name Input with Placeholder -->
+                        <Grid Grid.Column="0" VerticalAlignment="Center">
+                            <TextBox x:Name="TaskNameInput"
+                                     Text="{Binding NewTaskName, UpdateSourceTrigger=PropertyChanged}"
+                                     Background="Transparent" BorderThickness="0"
+                                     Foreground="#D0FFFFFF" Style="{StaticResource MainTaskNameTextBox}"
+                                     CaretBrush="White" MinWidth="100"
+                                     VerticalAlignment="Center"
+                                     Padding="0,2"/>
+                            <TextBlock Text="{DynamicResource TaskNamePlaceholder}"
+                                       Foreground="#40FFFFFF"
+                                       VerticalAlignment="Center"
+                                       IsHitTestVisible="False">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource MainTaskNamePlaceholder}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Text, ElementName=TaskNameInput}" Value="">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+
+                        <TextBlock Grid.Column="1" Text="{Binding CurrentElapsedDisplay}"
+                                   FontFamily="Consolas" Style="{StaticResource MainElapsedText}"
+                                   Foreground="White" VerticalAlignment="Center"
+                                   Margin="8,0,0,0"/>
+                    </Grid>
+                </Border>
+
+                <!-- ===== Browser URL (確認用) ===== -->
+                <TextBlock Grid.Row="4" Text="{Binding DetectedBrowserTitle}"
+                           Foreground="#50FFFFFF" Style="{StaticResource MainBrowserInfoText}"
+                           HorizontalAlignment="Center" Margin="16,6,16,0"
+                           TextTrimming="CharacterEllipsis" MaxWidth="340"
+                           ToolTip="{Binding DetectedBrowserTitle}"/>
+
+                <!-- ===== Status ===== -->
+                <TextBlock Grid.Row="5" Text="{Binding StatusMessage}"
+                           Foreground="#50FFFFFF" Style="{StaticResource MainStatusText}"
+                           HorizontalAlignment="Center" Margin="0,2,0,0"/>
+
+                <!-- ===== Control Buttons ===== -->
+                <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Center"
+                            Margin="0,12,0,16">
+                    <!-- Stop -->
+                    <Button ToolTip="{DynamicResource TooltipStop}" Width="44" Height="44" Margin="8,0"
+                            Command="{Binding StopTaskCommand}">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="Cursor" Value="Hand"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="bg" Background="Transparent" CornerRadius="22">
+                                                <TextBlock Text="&#xE71A;" FontFamily="Segoe MDL2 Assets"
+                                                           Style="{StaticResource MainControlIconSmallText}" Foreground="#A0FFFFFF"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="bg" Property="Background" Value="#20FFFFFF"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+
+                    <!-- Play/Pause -->
+                    <Button Width="60" Height="60" Margin="12,0"
+                            Command="{Binding StartOrPauseCommand}" ToolTip="{DynamicResource TooltipStartPause}">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Cursor" Value="Hand"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="bg" CornerRadius="14" Background="White">
+                                                <Border.Effect>
+                                                    <DropShadowEffect ShadowDepth="1" BlurRadius="8" Opacity="0.3" Color="Black"/>
+                                                </Border.Effect>
+                                                <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets"
+                                                           Style="{StaticResource MainControlIconLargeText}" Foreground="#1B1F3B"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="bg" Property="Background" Value="#F0F0F0"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+
+                    <!-- CSV Export -->
+                    <Button ToolTip="{DynamicResource TooltipExportCsv}" Width="44" Height="44" Margin="8,0"
+                            Command="{Binding ExportCsvCommand}">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="Cursor" Value="Hand"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="bg" Background="Transparent" CornerRadius="22">
+                                                <TextBlock Text="&#xEDE1;" FontFamily="Segoe MDL2 Assets"
+                                                           Style="{StaticResource MainControlIconSmallText}" Foreground="#A0FFFFFF"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="bg" Property="Background" Value="#20FFFFFF"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
+
+                <!-- ===== Session / Focus Stats ===== -->
+                <Border Grid.Row="7" Margin="24,0,24,16" Padding="0,8" VerticalAlignment="Bottom"
+                        BorderThickness="0,1,0,0" BorderBrush="#20FFFFFF">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                            <TextBlock Text="{DynamicResource LabelSessions}" Foreground="#80FFFFFF" Style="{StaticResource MainSessionLabelText}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{Binding SessionCount}" Foreground="White" Style="{StaticResource MainSessionValueText}"
+                                       HorizontalAlignment="Center"/>
+                        </StackPanel>
+
+                        <Border Grid.Column="1" Width="1" Background="#30FFFFFF"
+                                VerticalAlignment="Stretch" Margin="0,4"/>
+
+                        <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                            <TextBlock Text="{DynamicResource LabelFocus}" Foreground="#80FFFFFF" Style="{StaticResource MainSessionLabelText}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{Binding TotalFocusTimeDisplay}" Foreground="White" Style="{StaticResource MainSessionValueText}"
+                                       HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- ===== Sidebar (Task History) ===== -->
+        <Border x:Name="SidebarBorder" Grid.Column="1" CornerRadius="16" Margin="-8,8,8,8"
+                Visibility="Collapsed">
+            <Border.Effect>
+                <DropShadowEffect ShadowDepth="2" BlurRadius="16" Opacity="0.25" Color="Black"/>
+            </Border.Effect>
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#151833" Offset="0"/>
+                    <GradientStop Color="#221555" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+
+            <DockPanel Margin="12">
+                <!-- Sidebar Header -->
+                <Grid DockPanel.Dock="Top" Margin="4,4,4,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+                        <TextBlock Text="{DynamicResource LabelHistory}" Style="{StaticResource MainSidebarHeaderText}" Foreground="#D0FFFFFF"/>
+                        <TextBlock Text="{Binding Tasks.Count, StringFormat=' ({0})'}"
+                                   Style="{StaticResource MainSidebarCountText}" Foreground="#60FFFFFF" VerticalAlignment="Center" Margin="4,0,0,1"/>
+                    </StackPanel>
+
+                    <Button Grid.Column="1" ToolTip="{DynamicResource TooltipClearCompleted}" Width="24" Height="24"
+                            Command="{Binding ClearCompletedTasksCommand}">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="Cursor" Value="Hand"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="bg" Background="Transparent" CornerRadius="12">
+                                                <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"
+                                                           Style="{StaticResource MainSidebarDeleteIconText}" Foreground="#60FFFFFF"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="bg" Property="Background" Value="#20FFFFFF"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </Grid>
+
+                <!-- Task List -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Tasks}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="0,0,0,4" CornerRadius="8" Padding="10,8"
+                                        Background="#10FFFFFF">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Grid.Column="0" Width="3" CornerRadius="2" Margin="0,0,8,0">
+                                            <Border.Background>
+                                                <SolidColorBrush Color="{Binding Category, Converter={StaticResource CategoryToColor}}"/>
+                                            </Border.Background>
+                                        </Border>
+
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding TaskName}" Style="{StaticResource MainSidebarItemTitleText}"
+                                                       Foreground="#E0FFFFFF" TextTrimming="CharacterEllipsis"/>
+                                            <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                                <TextBlock Text="{Binding Category, Converter={StaticResource CategoryToString}}"
+                                                           Style="{StaticResource MainSidebarItemMetaText}" Foreground="#70FFFFFF"/>
+                                                <TextBlock Text=" · " Style="{StaticResource MainSidebarItemMetaText}" Foreground="#40FFFFFF"/>
+                                                <TextBlock Text="{Binding StartTime, Converter={StaticResource DateTimeToStr}}"
+                                                           Style="{StaticResource MainSidebarItemMetaText}" Foreground="#70FFFFFF"/>
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="6,0"
+                                                    HorizontalAlignment="Right">
+                                            <TextBlock Text="{Binding Elapsed, Converter={StaticResource TimeSpanToStr}}"
+                                                       FontFamily="Consolas" Style="{StaticResource MainSidebarItemElapsedText}"
+                                                       Foreground="White" HorizontalAlignment="Right"/>
+                                            <TextBlock Style="{StaticResource MainSidebarItemStateText}" HorizontalAlignment="Right" Margin="0,1,0,0">
+                                                <TextBlock.Text>
+                                                    <Binding Path="State" Converter="{StaticResource StateToString}"/>
+                                                </TextBlock.Text>
+                                                <TextBlock.Foreground>
+                                                    <SolidColorBrush Color="{Binding State, Converter={StaticResource StateToColor}}"/>
+                                                </TextBlock.Foreground>
+                                            </TextBlock>
+                                        </StackPanel>
+
+                                        <Button Grid.Column="3" ToolTip="{DynamicResource TooltipDelete}"
+                                                VerticalAlignment="Center"
+                                                Foreground="#50FFFFFF" Width="22" Height="22"
+                                                Command="{Binding DataContext.DeleteTaskCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}">
+                                            <Button.Style>
+                                                <Style TargetType="Button">
+                                                    <Setter Property="Background" Value="Transparent"/>
+                                                    <Setter Property="BorderThickness" Value="0"/>
+                                                    <Setter Property="Cursor" Value="Hand"/>
+                                                    <Setter Property="Template">
+                                                        <Setter.Value>
+                                                            <ControlTemplate TargetType="Button">
+                                                                <Border x:Name="bg" Background="Transparent" CornerRadius="11">
+                                                                    <TextBlock Text="&#xE8BB;" FontFamily="Segoe MDL2 Assets"
+                                                                               Style="{StaticResource MainSidebarDeleteIconText}" Foreground="#50FFFFFF"
+                                                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                </Border>
+                                                                <ControlTemplate.Triggers>
+                                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                                        <Setter TargetName="bg" Property="Background" Value="#25FFFFFF"/>
+                                                                    </Trigger>
+                                                                </ControlTemplate.Triggers>
+                                                            </ControlTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

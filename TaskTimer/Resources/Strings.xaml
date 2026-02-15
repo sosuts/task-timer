@@ -1,0 +1,81 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <sys:String x:Key="AppTitle" xmlns:sys="clr-namespace:System;assembly=mscorlib">Task Timer</sys:String>
+    <sys:String x:Key="MenuShowWindow" xmlns:sys="clr-namespace:System;assembly=mscorlib">Show window</sys:String>
+    <sys:String x:Key="MenuExit" xmlns:sys="clr-namespace:System;assembly=mscorlib">Exit</sys:String>
+
+    <sys:String x:Key="TooltipHistory" xmlns:sys="clr-namespace:System;assembly=mscorlib">History</sys:String>
+    <sys:String x:Key="TooltipSettings" xmlns:sys="clr-namespace:System;assembly=mscorlib">Settings</sys:String>
+    <sys:String x:Key="TooltipMinimize" xmlns:sys="clr-namespace:System;assembly=mscorlib">Minimize</sys:String>
+    <sys:String x:Key="TooltipClose" xmlns:sys="clr-namespace:System;assembly=mscorlib">Close</sys:String>
+    <sys:String x:Key="ToggleAuto" xmlns:sys="clr-namespace:System;assembly=mscorlib">Auto</sys:String>
+    <sys:String x:Key="ToggleIdle" xmlns:sys="clr-namespace:System;assembly=mscorlib">Idle</sys:String>
+    <sys:String x:Key="ToggleTop" xmlns:sys="clr-namespace:System;assembly=mscorlib">Top</sys:String>
+    <sys:String x:Key="TaskNamePlaceholder" xmlns:sys="clr-namespace:System;assembly=mscorlib">Task name...</sys:String>
+    <sys:String x:Key="TooltipStop" xmlns:sys="clr-namespace:System;assembly=mscorlib">Stop</sys:String>
+    <sys:String x:Key="TooltipStartPause" xmlns:sys="clr-namespace:System;assembly=mscorlib">Start / Pause</sys:String>
+    <sys:String x:Key="TooltipExportCsv" xmlns:sys="clr-namespace:System;assembly=mscorlib">Export CSV</sys:String>
+    <sys:String x:Key="LabelSessions" xmlns:sys="clr-namespace:System;assembly=mscorlib">Sessions</sys:String>
+    <sys:String x:Key="LabelFocus" xmlns:sys="clr-namespace:System;assembly=mscorlib">Focus</sys:String>
+    <sys:String x:Key="LabelHistory" xmlns:sys="clr-namespace:System;assembly=mscorlib">History</sys:String>
+    <sys:String x:Key="TooltipClearCompleted" xmlns:sys="clr-namespace:System;assembly=mscorlib">Clear completed</sys:String>
+    <sys:String x:Key="TooltipDelete" xmlns:sys="clr-namespace:System;assembly=mscorlib">Delete</sys:String>
+
+    <sys:String x:Key="SettingsTitle" xmlns:sys="clr-namespace:System;assembly=mscorlib">Settings</sys:String>
+    <sys:String x:Key="SettingsHeader" xmlns:sys="clr-namespace:System;assembly=mscorlib">Settings</sys:String>
+    <sys:String x:Key="LabelBrowserDomainMappings" xmlns:sys="clr-namespace:System;assembly=mscorlib">Browser Domain Mappings</sys:String>
+    <sys:String x:Key="DescBrowserDomainMappings" xmlns:sys="clr-namespace:System;assembly=mscorlib">Detects tasks when the URL contains the specified domain.</sys:String>
+    <sys:String x:Key="LabelDomain" xmlns:sys="clr-namespace:System;assembly=mscorlib">Domain</sys:String>
+    <sys:String x:Key="LabelTaskName" xmlns:sys="clr-namespace:System;assembly=mscorlib">Task Name</sys:String>
+    <sys:String x:Key="ButtonAddMapping" xmlns:sys="clr-namespace:System;assembly=mscorlib">+ Add Mapping</sys:String>
+    <sys:String x:Key="LabelProcessMappings" xmlns:sys="clr-namespace:System;assembly=mscorlib">Process Mappings</sys:String>
+    <sys:String x:Key="DescProcessMappings" xmlns:sys="clr-namespace:System;assembly=mscorlib">Configure process names and labels for auto detection.</sys:String>
+    <sys:String x:Key="LabelProcessName" xmlns:sys="clr-namespace:System;assembly=mscorlib">Process Name</sys:String>
+    <sys:String x:Key="LabelProcessLabel" xmlns:sys="clr-namespace:System;assembly=mscorlib">Label</sys:String>
+    <sys:String x:Key="ButtonAddProcess" xmlns:sys="clr-namespace:System;assembly=mscorlib">+ Add Process</sys:String>
+    <sys:String x:Key="LabelFontSize" xmlns:sys="clr-namespace:System;assembly=mscorlib">Font Size</sys:String>
+    <sys:String x:Key="DescFontSize" xmlns:sys="clr-namespace:System;assembly=mscorlib">Select font size for the main window.</sys:String>
+    <sys:String x:Key="LabelLanguage" xmlns:sys="clr-namespace:System;assembly=mscorlib">Language</sys:String>
+    <sys:String x:Key="DescLanguage" xmlns:sys="clr-namespace:System;assembly=mscorlib">Select application language.</sys:String>
+    <sys:String x:Key="LabelIdleThreshold" xmlns:sys="clr-namespace:System;assembly=mscorlib">Idle Threshold</sys:String>
+    <sys:String x:Key="DescIdleThreshold" xmlns:sys="clr-namespace:System;assembly=mscorlib">Task tracking pauses when no mouse or keyboard activity is detected for this duration.</sys:String>
+    <sys:String x:Key="LabelCsvOutputDirectory" xmlns:sys="clr-namespace:System;assembly=mscorlib">CSV Output Directory</sys:String>
+    <sys:String x:Key="DescCsvOutputDirectory" xmlns:sys="clr-namespace:System;assembly=mscorlib">Leave empty for default (My Documents/TaskTimer).</sys:String>
+    <sys:String x:Key="ButtonSave" xmlns:sys="clr-namespace:System;assembly=mscorlib">Save</sys:String>
+    <sys:String x:Key="ButtonClose" xmlns:sys="clr-namespace:System;assembly=mscorlib">Close</sys:String>
+
+    <sys:String x:Key="LanguageEnglish" xmlns:sys="clr-namespace:System;assembly=mscorlib">English</sys:String>
+    <sys:String x:Key="LanguageJapanese" xmlns:sys="clr-namespace:System;assembly=mscorlib">Japanese</sys:String>
+    <sys:String x:Key="FontSizeSmall" xmlns:sys="clr-namespace:System;assembly=mscorlib">Small</sys:String>
+    <sys:String x:Key="FontSizeMedium" xmlns:sys="clr-namespace:System;assembly=mscorlib">Medium</sys:String>
+    <sys:String x:Key="FontSizeLarge" xmlns:sys="clr-namespace:System;assembly=mscorlib">Large</sys:String>
+
+    <sys:String x:Key="StatusReady" xmlns:sys="clr-namespace:System;assembly=mscorlib">Ready</sys:String>
+    <sys:String x:Key="StatusIdlePaused" xmlns:sys="clr-namespace:System;assembly=mscorlib">Idle - Paused</sys:String>
+    <sys:String x:Key="StatusIdle" xmlns:sys="clr-namespace:System;assembly=mscorlib">Idle</sys:String>
+    <sys:String x:Key="StatusPausedFormat" xmlns:sys="clr-namespace:System;assembly=mscorlib">Paused: {0}</sys:String>
+    <sys:String x:Key="StatusCsvExported" xmlns:sys="clr-namespace:System;assembly=mscorlib">CSV exported</sys:String>
+    <sys:String x:Key="MessageCsvExportedTitle" xmlns:sys="clr-namespace:System;assembly=mscorlib">CSV Export</sys:String>
+    <sys:String x:Key="MessageCsvExportedFormat" xmlns:sys="clr-namespace:System;assembly=mscorlib">CSV exported:\n{0}</sys:String>
+    <sys:String x:Key="MessageErrorTitle" xmlns:sys="clr-namespace:System;assembly=mscorlib">Error</sys:String>
+    <sys:String x:Key="MessageCsvExportFailedFormat" xmlns:sys="clr-namespace:System;assembly=mscorlib">CSV export failed:\n{0}</sys:String>
+    <sys:String x:Key="SaveStatusMessage" xmlns:sys="clr-namespace:System;assembly=mscorlib">Saved</sys:String>
+
+    <sys:String x:Key="TaskStateRunning" xmlns:sys="clr-namespace:System;assembly=mscorlib">? Running</sys:String>
+    <sys:String x:Key="TaskStatePaused" xmlns:sys="clr-namespace:System;assembly=mscorlib">? Paused</sys:String>
+    <sys:String x:Key="TaskStateStopped" xmlns:sys="clr-namespace:System;assembly=mscorlib">? Stopped</sys:String>
+
+    <sys:String x:Key="TaskCategoryManual" xmlns:sys="clr-namespace:System;assembly=mscorlib">?? Manual</sys:String>
+    <sys:String x:Key="TaskCategoryCodeReview" xmlns:sys="clr-namespace:System;assembly=mscorlib">?? Code Review</sys:String>
+    <sys:String x:Key="TaskCategoryVSCode" xmlns:sys="clr-namespace:System;assembly=mscorlib">?? VSCode</sys:String>
+    <sys:String x:Key="TaskCategoryVisualStudio" xmlns:sys="clr-namespace:System;assembly=mscorlib">?? Visual Studio</sys:String>
+    <sys:String x:Key="TaskCategoryWord" xmlns:sys="clr-namespace:System;assembly=mscorlib">?? Word</sys:String>
+    <sys:String x:Key="TaskCategoryExcel" xmlns:sys="clr-namespace:System;assembly=mscorlib">?? Excel</sys:String>
+    <sys:String x:Key="TaskCategoryOther" xmlns:sys="clr-namespace:System;assembly=mscorlib">?? Other</sys:String>
+
+    <sys:String x:Key="LabelCodeReview" xmlns:sys="clr-namespace:System;assembly=mscorlib">Code Review</sys:String>
+    <sys:String x:Key="LabelVSCodeWork" xmlns:sys="clr-namespace:System;assembly=mscorlib">VSCode Work</sys:String>
+    <sys:String x:Key="LabelVisualStudioWork" xmlns:sys="clr-namespace:System;assembly=mscorlib">Visual Studio Work</sys:String>
+    <sys:String x:Key="LabelWordWork" xmlns:sys="clr-namespace:System;assembly=mscorlib">Word Work</sys:String>
+    <sys:String x:Key="LabelExcelWork" xmlns:sys="clr-namespace:System;assembly=mscorlib">Excel Work</sys:String>
+</ResourceDictionary>

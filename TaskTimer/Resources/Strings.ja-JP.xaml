@@ -1,0 +1,83 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <sys:String x:Key="AppTitle">Task Timer</sys:String>
+    <sys:String x:Key="MenuShowWindow">ウィンドウを表示</sys:String>
+    <sys:String x:Key="MenuExit">終了</sys:String>
+
+    <sys:String x:Key="TooltipHistory">履歴</sys:String>
+    <sys:String x:Key="TooltipSettings">設定</sys:String>
+    <sys:String x:Key="TooltipMinimize">最小化</sys:String>
+    <sys:String x:Key="TooltipClose">閉じる</sys:String>
+    <sys:String x:Key="ToggleAuto">プロセス検知</sys:String>
+    <sys:String x:Key="ToggleIdle">無操作検知</sys:String>
+    <sys:String x:Key="ToggleTop">最前面</sys:String>
+    <sys:String x:Key="TaskNamePlaceholder">タスク名...</sys:String>
+    <sys:String x:Key="TooltipStop">停止</sys:String>
+    <sys:String x:Key="TooltipStartPause">開始/一時停止</sys:String>
+    <sys:String x:Key="TooltipExportCsv">CSV出力</sys:String>
+    <sys:String x:Key="LabelSessions">タスク数</sys:String>
+    <sys:String x:Key="LabelFocus">合計時間</sys:String>
+    <sys:String x:Key="LabelHistory">履歴</sys:String>
+    <sys:String x:Key="TooltipClearCompleted">削除しました</sys:String>
+    <sys:String x:Key="TooltipDelete">削除</sys:String>
+
+    <sys:String x:Key="SettingsTitle">設定</sys:String>
+    <sys:String x:Key="SettingsHeader">設定</sys:String>
+    <sys:String x:Key="LabelBrowserDomainMappings">ブラウザドメイン設定</sys:String>
+    <sys:String x:Key="DescBrowserDomainMappings">URLにドメインが含まれるとタスクを自動検知します。</sys:String>
+    <sys:String x:Key="LabelDomain">ドメイン</sys:String>
+    <sys:String x:Key="LabelTaskName">タスク名</sys:String>
+    <sys:String x:Key="ButtonAddMapping">+ 追加</sys:String>
+    <sys:String x:Key="LabelProcessMappings">プロセス設定</sys:String>
+    <sys:String x:Key="DescProcessMappings">プロセス名とラベルを設定します。</sys:String>
+    <sys:String x:Key="LabelProcessName">プロセス名</sys:String>
+    <sys:String x:Key="LabelProcessLabel">ラベル</sys:String>
+    <sys:String x:Key="ButtonAddProcess">+ 追加</sys:String>
+    <sys:String x:Key="LabelFontSize">フォントサイズ</sys:String>
+    <sys:String x:Key="DescFontSize">メインウィンドウのフォントサイズを選択します。</sys:String>
+    <sys:String x:Key="LabelLanguage">言語</sys:String>
+    <sys:String x:Key="DescLanguage">表示言語を選択します。</sys:String>
+    <sys:String x:Key="LabelIdleThreshold">無操作判定 [分]</sys:String>
+    <sys:String x:Key="DescIdleThreshold">一定時間操作がない場合はタスク計測を一時停止します。</sys:String>
+    <sys:String x:Key="LabelCsvOutputDirectory">CSV出力先</sys:String>
+    <sys:String x:Key="DescCsvOutputDirectory">空欄の場合は既定 (Documents/TaskTimer) です。</sys:String>
+    <sys:String x:Key="ButtonSave">保存</sys:String>
+    <sys:String x:Key="ButtonClose">閉じる</sys:String>
+
+    <sys:String x:Key="LanguageEnglish">英語</sys:String>
+    <sys:String x:Key="LanguageJapanese">日本語</sys:String>
+
+    <sys:String x:Key="FontSizeSmall">小</sys:String>
+    <sys:String x:Key="FontSizeMedium">中</sys:String>
+    <sys:String x:Key="FontSizeLarge">大</sys:String>
+
+    <sys:String x:Key="StatusReady">待機中</sys:String>
+    <sys:String x:Key="StatusIdlePaused">無操作 - 一時停止</sys:String>
+    <sys:String x:Key="StatusIdle">無操作中</sys:String>
+    <sys:String x:Key="StatusPausedFormat">一時停止: {0}</sys:String>
+    <sys:String x:Key="StatusCsvExported">CSVを出力しました</sys:String>
+    <sys:String x:Key="MessageCsvExportedTitle">CSV出力</sys:String>
+    <sys:String x:Key="MessageCsvExportedFormat">CSVを出力しました:\n{0}</sys:String>
+    <sys:String x:Key="MessageErrorTitle">エラー</sys:String>
+    <sys:String x:Key="MessageCsvExportFailedFormat">CSV出力に失敗しました:\n{0}</sys:String>
+    <sys:String x:Key="SaveStatusMessage">保存しました</sys:String>
+
+    <sys:String x:Key="TaskStateRunning">⏱ 実行中</sys:String>
+    <sys:String x:Key="TaskStatePaused">⏸ 一時停止</sys:String>
+    <sys:String x:Key="TaskStateStopped">⏹ 停止</sys:String>
+
+    <sys:String x:Key="TaskCategoryManual">📝 手動</sys:String>
+    <sys:String x:Key="TaskCategoryCodeReview">🔍 コードレビュー</sys:String>
+    <sys:String x:Key="TaskCategoryVSCode">💻 VSCode</sys:String>
+    <sys:String x:Key="TaskCategoryVisualStudio">🖥 Visual Studio</sys:String>
+    <sys:String x:Key="TaskCategoryWord">📄 Word</sys:String>
+    <sys:String x:Key="TaskCategoryExcel">📊 Excel</sys:String>
+    <sys:String x:Key="TaskCategoryOther">📁 その他</sys:String>
+
+    <sys:String x:Key="LabelCodeReview">コードレビュー</sys:String>
+    <sys:String x:Key="LabelVSCodeWork">VSCode作業</sys:String>
+    <sys:String x:Key="LabelVisualStudioWork">Visual Studio作業</sys:String>
+    <sys:String x:Key="LabelWordWork">Word作業</sys:String>
+    <sys:String x:Key="LabelExcelWork">Excel作業</sys:String>
+</ResourceDictionary>
