@@ -31,7 +31,8 @@ public class AppSettings
     /// <summary>ブラウザドメイン→タスク名のマッピング一覧</summary>
     public List<BrowserDomainMapping> BrowserDomainMappings { get; set; } = new()
     {
-        new() { Domain = "gitlab.example.com", TaskName = "コードレビュー" }
+        new() { Domain = "gitlab.example.com", TaskName = "コードレビュー" },
+        new() { Domain = "github.com", TaskName = "GitHub" }
     };
 
     /// <summary>フォントサイズ設定</summary>

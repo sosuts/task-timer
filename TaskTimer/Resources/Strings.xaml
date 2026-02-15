@@ -24,7 +24,7 @@
     <sys:String x:Key="SettingsTitle" xmlns:sys="clr-namespace:System;assembly=mscorlib">Settings</sys:String>
     <sys:String x:Key="SettingsHeader" xmlns:sys="clr-namespace:System;assembly=mscorlib">Settings</sys:String>
     <sys:String x:Key="LabelBrowserDomainMappings" xmlns:sys="clr-namespace:System;assembly=mscorlib">Browser Domain Mappings</sys:String>
-    <sys:String x:Key="DescBrowserDomainMappings" xmlns:sys="clr-namespace:System;assembly=mscorlib">Detects tasks when the URL contains the specified domain.</sys:String>
+    <sys:String x:Key="DescBrowserDomainMappings" xmlns:sys="clr-namespace:System;assembly=mscorlib">Detects tasks when the browser URL contains the specified domain.</sys:String>
     <sys:String x:Key="LabelDomain" xmlns:sys="clr-namespace:System;assembly=mscorlib">Domain</sys:String>
     <sys:String x:Key="LabelTaskName" xmlns:sys="clr-namespace:System;assembly=mscorlib">Task Name</sys:String>
     <sys:String x:Key="ButtonAddMapping" xmlns:sys="clr-namespace:System;assembly=mscorlib">+ Add Mapping</sys:String>

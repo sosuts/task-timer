@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Windows.Automation;
 using TaskTimer.Models;
 
 namespace TaskTimer.Services;
@@ -22,7 +23,13 @@ public class ProcessMonitorService : IDisposable
     private readonly AppSettings _settings;
     private TaskCategory? _currentDetectedCategory;
     private string _currentWindowTitle = string.Empty;
-    private string _lastDetectedBrowserTitle = string.Empty;
+    private string _lastDetectedBrowserUrl = string.Empty;
+
+    // ブラウザプロセス名のリスト
+    private static readonly HashSet<string> BrowserProcessNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "chrome", "msedge", "firefox", "brave", "opera", "iexplore"
+    };
 
     /// <summary>
     /// タスクカテゴリが変更されたときに発火
@@ -35,12 +42,12 @@ public class ProcessMonitorService : IDisposable
     public event EventHandler? TaskLost;
 
     /// <summary>
-    /// 現在検知しているブラウザのウィンドウタイトル
+    /// 現在検知しているブラウザのURL
     /// </summary>
-    public string LastDetectedBrowserTitle => _lastDetectedBrowserTitle;
+    public string LastDetectedBrowserUrl => _lastDetectedBrowserUrl;
 
     /// <summary>
-    /// ブラウザタイトルが変化したときに発火
+    /// ブラウザURLが変化したときに発火
     /// </summary>
     public event EventHandler<string>? BrowserTitleChanged;
 
@@ -72,24 +79,26 @@ public class ProcessMonitorService : IDisposable
             GetWindowText(hwnd, sb, sb.Capacity);
             var windowTitle = sb.ToString();
 
-            // ブラウザの場合、ドメインマッピングをチェック
+            // ブラウザの場合、URLを取得してドメインマッピングをチェック
             var mapping = FindMapping(processName, windowTitle);
 
             if (mapping != null)
             {
                 var category = mapping.Category;
 
-                // ブラウザの場合、BrowserDomainMappingsでドメインマッチを確認
-                if (mapping.Category == TaskCategory.CodeReview)
+                // ブラウザの場合、UIAutomationでURLを取得してドメインマッチを確認
+                if (mapping.Category == TaskCategory.CodeReview && BrowserProcessNames.Contains(processName))
                 {
-                    // ブラウザタイトルを常に通知
-                    if (_lastDetectedBrowserTitle != windowTitle)
+                    var browserUrl = GetBrowserUrl(hwnd, processName);
+                    
+                    // URL情報を通知
+                    if (_lastDetectedBrowserUrl != browserUrl)
                     {
-                        _lastDetectedBrowserTitle = windowTitle;
-                        BrowserTitleChanged?.Invoke(this, windowTitle);
+                        _lastDetectedBrowserUrl = browserUrl;
+                        BrowserTitleChanged?.Invoke(this, browserUrl);
                     }
 
-                    var domainMapping = FindBrowserDomainMapping(windowTitle);
+                    var domainMapping = FindBrowserDomainMapping(browserUrl);
                     if (domainMapping == null)
                     {
                         // どのドメインにもマッチしないブラウザは無視
@@ -103,10 +112,10 @@ public class ProcessMonitorService : IDisposable
                     }
 
                     // マッチしたドメインのタスク名を使用
-                    if (_currentDetectedCategory != category || _currentWindowTitle != windowTitle)
+                    if (_currentDetectedCategory != category || _currentWindowTitle != browserUrl)
                     {
                         _currentDetectedCategory = category;
-                        _currentWindowTitle = windowTitle;
+                        _currentWindowTitle = browserUrl;
                         TaskDetected?.Invoke(this, new TaskDetectedEventArgs
                         {
                             Category = category,
@@ -131,10 +140,10 @@ public class ProcessMonitorService : IDisposable
                     });
                 }
 
-                // ブラウザ以外の場合、タイトルをクリア
-                if (_lastDetectedBrowserTitle != string.Empty)
+                // ブラウザ以外の場合、URLをクリア
+                if (_lastDetectedBrowserUrl != string.Empty)
                 {
-                    _lastDetectedBrowserTitle = string.Empty;
+                    _lastDetectedBrowserUrl = string.Empty;
                     BrowserTitleChanged?.Invoke(this, string.Empty);
                 }
             }
@@ -147,10 +156,10 @@ public class ProcessMonitorService : IDisposable
                     TaskLost?.Invoke(this, EventArgs.Empty);
                 }
 
-                // ブラウザタイトルをクリア
-                if (_lastDetectedBrowserTitle != string.Empty)
+                // URLをクリア
+                if (_lastDetectedBrowserUrl != string.Empty)
                 {
-                    _lastDetectedBrowserTitle = string.Empty;
+                    _lastDetectedBrowserUrl = string.Empty;
                     BrowserTitleChanged?.Invoke(this, string.Empty);
                 }
             }
@@ -162,14 +171,72 @@ public class ProcessMonitorService : IDisposable
     }
 
     /// <summary>
-    /// BrowserDomainMappingsからウィンドウタイトルにマッチするマッピングを探す
+    /// UIAutomationを使ってブラウザのURLを取得する
     /// </summary>
-    private BrowserDomainMapping? FindBrowserDomainMapping(string windowTitle)
+    private string GetBrowserUrl(IntPtr hwnd, string processName)
     {
+        try
+        {
+            var element = AutomationElement.FromHandle(hwnd);
+            if (element == null) return string.Empty;
+
+            // ブラウザごとに異なるアドレスバーの取得方法
+            AutomationElement? urlBar = null;
+
+            if (processName.Equals("chrome", StringComparison.OrdinalIgnoreCase) ||
+                processName.Equals("msedge", StringComparison.OrdinalIgnoreCase) ||
+                processName.Equals("brave", StringComparison.OrdinalIgnoreCase) ||
+                processName.Equals("opera", StringComparison.OrdinalIgnoreCase))
+            {
+                // Chromium系ブラウザ: Edit コントロールを探す
+                urlBar = element.FindFirst(TreeScope.Descendants,
+                    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Edit));
+            }
+            else if (processName.Equals("firefox", StringComparison.OrdinalIgnoreCase))
+            {
+                // Firefox: ComboBox内のEditを探す
+                var comboBox = element.FindFirst(TreeScope.Descendants,
+                    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ComboBox));
+                if (comboBox != null)
+                {
+                    urlBar = comboBox.FindFirst(TreeScope.Descendants,
+                        new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Edit));
+                }
+                
+                // 見つからない場合は直接Editを探す
+                urlBar ??= element.FindFirst(TreeScope.Descendants,
+                    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Edit));
+            }
+
+            if (urlBar != null)
+            {
+                // ValuePatternでURLを取得
+                if (urlBar.TryGetCurrentPattern(ValuePattern.Pattern, out var pattern))
+                {
+                    var valuePattern = (ValuePattern)pattern;
+                    return valuePattern.Current.Value;
+                }
+            }
+        }
+        catch
+        {
+            // UIAutomation失敗は無視
+        }
+
+        return string.Empty;
+    }
+
+    /// <summary>
+    /// BrowserDomainMappingsからURLにマッチするマッピングを探す
+    /// </summary>
+    private BrowserDomainMapping? FindBrowserDomainMapping(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return null;
+
         foreach (var dm in _settings.BrowserDomainMappings)
         {
             if (!string.IsNullOrWhiteSpace(dm.Domain) &&
-                windowTitle.Contains(dm.Domain, StringComparison.OrdinalIgnoreCase))
+                url.Contains(dm.Domain, StringComparison.OrdinalIgnoreCase))
             {
                 return dm;
             }

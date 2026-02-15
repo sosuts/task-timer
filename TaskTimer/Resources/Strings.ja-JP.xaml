@@ -25,7 +25,7 @@
     <sys:String x:Key="SettingsTitle">設定</sys:String>
     <sys:String x:Key="SettingsHeader">設定</sys:String>
     <sys:String x:Key="LabelBrowserDomainMappings">ブラウザドメイン設定</sys:String>
-    <sys:String x:Key="DescBrowserDomainMappings">URLにドメインが含まれるとタスクを自動検知します。</sys:String>
+    <sys:String x:Key="DescBrowserDomainMappings">ブラウザのURLに指定のドメインが含まれるとタスクを自動検知します。</sys:String>
     <sys:String x:Key="LabelDomain">ドメイン</sys:String>
     <sys:String x:Key="LabelTaskName">タスク名</sys:String>
     <sys:String x:Key="ButtonAddMapping">+ 追加</sys:String>

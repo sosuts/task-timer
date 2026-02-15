@@ -5,7 +5,7 @@ namespace TaskTimer.Models;
 /// </summary>
 public class BrowserDomainMapping
 {
-    /// <summary>監視対象のドメイン（ブラウザのタイトルに含まれるか判定）</summary>
+    /// <summary>監視対象のドメイン（ブラウザのURLに含まれるか検索）</summary>
     public string Domain { get; set; } = string.Empty;
 
     /// <summary>検知時に付けるタスク名</summary>
