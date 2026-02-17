@@ -391,11 +391,25 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void DeleteTask(TaskRecord? task)
     {
         if (task == null) return;
+
+        // 確認ダイアログ
+        if (_settings.ConfirmOnDelete)
+        {
+            var result = MessageBox.Show(
+                string.Format(LocalizationService.GetString("ConfirmDeleteTaskFormat"), task.TaskName),
+                LocalizationService.GetString("ConfirmDeleteTitle"),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result != MessageBoxResult.Yes)
+                return;
+        }
+
         if (task == ActiveTask)
         {
             StopCurrentTask();
             ActiveTask = null;
-            StatusMessage = "Ready";
+            StatusMessage = LocalizationService.GetString("StatusReady");
             CurrentElapsedDisplay = "00:00";
         }
         Tasks.Remove(task);
@@ -437,6 +451,21 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void ClearCompletedTasks()
     {
         var stopped = Tasks.Where(t => t.State == TaskState.Stopped).ToList();
+        if (stopped.Count == 0) return;
+
+        // 確認ダイアログ
+        if (_settings.ConfirmOnDelete)
+        {
+            var result = MessageBox.Show(
+                string.Format(LocalizationService.GetString("ConfirmClearCompletedFormat"), stopped.Count),
+                LocalizationService.GetString("ConfirmDeleteTitle"),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result != MessageBoxResult.Yes)
+                return;
+        }
+
         foreach (var t in stopped)
         {
             Tasks.Remove(t);

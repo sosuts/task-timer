@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Windows;
 using H.NotifyIcon;
 using TaskTimer.Models;
@@ -9,9 +10,28 @@ namespace TaskTimer;
 public partial class App : Application
 {
     private TaskbarIcon? _notifyIcon;
+    private static Mutex? _mutex;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool DestroyIcon(IntPtr hIcon);
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        // 多重起動防止
+        const string mutexName = "TaskTimer_SingleInstance_Mutex";
+        _mutex = new Mutex(true, mutexName, out bool createdNew);
+
+        if (!createdNew)
+        {
+            System.Windows.MessageBox.Show(
+                LocalizationService.GetString("MessageAlreadyRunning"),
+                LocalizationService.GetString("AppTitle"),
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            Shutdown();
+            return;
+        }
+
         base.OnStartup(e);
 
         var settings = AppSettings.Load();
@@ -61,13 +81,15 @@ public partial class App : Application
         {
             mw.ForceClose();
         }
+        _mutex?.ReleaseMutex();
+        _mutex?.Dispose();
         Shutdown();
     }
 
     private static Icon CreateDefaultIcon()
     {
         // 16x16のシンプルなタイマーアイコンを動的に生成
-        var bmp = new Bitmap(16, 16);
+        using var bmp = new Bitmap(16, 16);
         using var g = Graphics.FromImage(bmp);
         g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
@@ -81,12 +103,18 @@ public partial class App : Application
         g.DrawLine(pen, 8, 8, 11, 8); // 時針
 
         var handle = bmp.GetHicon();
-        return Icon.FromHandle(handle);
+        var icon = Icon.FromHandle(handle);
+        // Icon.FromHandle は所有権を取得しないため、コピーを作成
+        var clonedIcon = (Icon)icon.Clone();
+        DestroyIcon(handle);
+        return clonedIcon;
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
         _notifyIcon?.Dispose();
+        _mutex?.ReleaseMutex();
+        _mutex?.Dispose();
         base.OnExit(e);
     }
 }

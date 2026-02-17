@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Input;
+using TaskTimer.Models;
 
 namespace TaskTimer;
 
@@ -16,6 +17,7 @@ public partial class MainWindow : Window
         if (DataContext is ViewModels.MainViewModel vm)
         {
             vm.PropertyChanged += ViewModel_PropertyChanged;
+            RestoreWindowState(vm.Settings);
         }
         DataContextChanged += (_, _) =>
         {
@@ -31,6 +33,39 @@ public partial class MainWindow : Window
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
         EnsureOnScreen();
+    }
+
+    private void RestoreWindowState(AppSettings settings)
+    {
+        if (!double.IsNaN(settings.WindowLeft) && !double.IsNaN(settings.WindowTop))
+        {
+            Left = settings.WindowLeft;
+            Top = settings.WindowTop;
+        }
+
+        if (settings.WindowWidth > 0)
+        {
+            Width = settings.WindowWidth;
+            _mainPanelWidth = settings.WindowWidth;
+        }
+
+        if (settings.WindowHeight > 0)
+        {
+            Height = settings.WindowHeight;
+        }
+    }
+
+    private void SaveWindowState()
+    {
+        if (DataContext is ViewModels.MainViewModel vm)
+        {
+            var settings = vm.Settings;
+            settings.WindowLeft = Left;
+            settings.WindowTop = Top;
+            settings.WindowWidth = vm.IsSidebarOpen ? _mainPanelWidth : Width;
+            settings.WindowHeight = Height;
+            settings.Save();
+        }
     }
 
     private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -62,12 +97,14 @@ public partial class MainWindow : Window
     private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
         e.Cancel = true;
+        SaveWindowState();
         Hide();
     }
 
     public void ForceClose()
     {
         Closing -= MainWindow_Closing;
+        SaveWindowState();
         if (DataContext is ViewModels.MainViewModel vm)
         {
             vm.Dispose();
@@ -89,6 +126,7 @@ public partial class MainWindow : Window
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)
     {
+        SaveWindowState();
         Hide();
     }
 
@@ -117,34 +155,28 @@ public partial class MainWindow : Window
         var virtualWidth = SystemParameters.VirtualScreenWidth;
         var virtualHeight = SystemParameters.VirtualScreenHeight;
 
-        var needUpdate = false;
-
         // 右端がはみ出る場合
         if (Left + Width > virtualLeft + virtualWidth)
         {
             Left = virtualLeft + virtualWidth - Width;
-            needUpdate = true;
         }
 
         // 下端がはみ出る場合
         if (Top + Height > virtualTop + virtualHeight)
         {
             Top = virtualTop + virtualHeight - Height;
-            needUpdate = true;
         }
 
         // 左端がはみ出る場合
         if (Left < virtualLeft)
         {
             Left = virtualLeft;
-            needUpdate = true;
         }
 
         // 上端がはみ出る場合
         if (Top < virtualTop)
         {
             Top = virtualTop;
-            needUpdate = true;
         }
     }
 }

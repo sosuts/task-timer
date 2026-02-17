@@ -8,6 +8,19 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>TaskTimer</AssemblyName>
     <RootNamespace>TaskTimer</RootNamespace>
+    
+    <!-- バージョン情報 -->
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <InformationalVersion>1.0.0</InformationalVersion>
+    
+    <!-- アプリケーション情報 -->
+    <Product>Task Timer</Product>
+    <Company>sosuts</Company>
+    <Authors>sosuts</Authors>
+    <Description>Automatic task time tracking application for developers</Description>
+    <Copyright>Copyright 2025 sosuts</Copyright>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,9 +29,9 @@
     <PackageReference Include="H.NotifyIcon.Wpf" Version="2.1.3" />
   </ItemGroup>
 
+  <!-- UIAutomation assemblies for browser URL detection -->
   <ItemGroup>
-    <Reference Include="UIAutomationClient" />
-    <Reference Include="UIAutomationTypes" />
+    <FrameworkReference Include="Microsoft.WindowsDesktop.App.WPF" />
   </ItemGroup>
 
 </Project>

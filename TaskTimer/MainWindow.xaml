@@ -4,8 +4,8 @@
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         xmlns:vm="clr-namespace:TaskTimer.ViewModels"
         xmlns:conv="clr-namespace:TaskTimer.Converters"
-        Title="{DynamicResource AppTitle}" Height="520" Width="380"
-        MinHeight="480" MinWidth="340"
+        Title="{DynamicResource AppTitle}" Height="620" Width="380"
+        MinHeight="580" MinWidth="340"
         WindowStartupLocation="CenterScreen"
         Background="Transparent"
         AllowsTransparency="True"
@@ -274,7 +274,7 @@
                 </StackPanel>
 
                 <!-- ===== Session / Focus Stats ===== -->
-                <Border Grid.Row="7" Margin="24,0,24,16" Padding="0,8" VerticalAlignment="Bottom"
+                <Border Grid.Row="7" Margin="24,0,24,24" Padding="0,8" VerticalAlignment="Bottom"
                         BorderThickness="0,1,0,0" BorderBrush="#20FFFFFF">
                     <Grid>
                         <Grid.ColumnDefinitions>

@@ -24,6 +24,7 @@ public class ProcessMonitorService : IDisposable
     private TaskCategory? _currentDetectedCategory;
     private string _currentWindowTitle = string.Empty;
     private string _lastDetectedBrowserUrl = string.Empty;
+    private bool _disposed;
 
     // ブラウザプロセス名のリスト
     private static readonly HashSet<string> BrowserProcessNames = new(StringComparer.OrdinalIgnoreCase)
@@ -53,26 +54,50 @@ public class ProcessMonitorService : IDisposable
 
     public ProcessMonitorService(AppSettings settings)
     {
-        _settings = settings;
+        _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         _timer = new System.Windows.Threading.DispatcherTimer
         {
-            Interval = TimeSpan.FromSeconds(settings.ProcessCheckIntervalSeconds)
+            Interval = TimeSpan.FromSeconds(Math.Max(1, settings.ProcessCheckIntervalSeconds))
         };
         _timer.Tick += CheckActiveProcess;
     }
 
-    public void Start() => _timer.Start();
+    public void Start()
+    {
+        if (!_disposed)
+            _timer.Start();
+    }
+
     public void Stop() => _timer.Stop();
 
     private void CheckActiveProcess(object? sender, EventArgs e)
     {
+        if (_disposed) return;
+
         try
         {
             var hwnd = GetForegroundWindow();
             if (hwnd == IntPtr.Zero) return;
 
             GetWindowThreadProcessId(hwnd, out var pid);
-            var process = Process.GetProcessById((int)pid);
+            if (pid == 0) return;
+
+            Process? process = null;
+            try
+            {
+                process = Process.GetProcessById((int)pid);
+            }
+            catch (ArgumentException)
+            {
+                // プロセスが既に終了している
+                return;
+            }
+            catch (InvalidOperationException)
+            {
+                // プロセス情報にアクセスできない
+                return;
+            }
+
             var processName = process.ProcessName;
 
             var sb = new System.Text.StringBuilder(512);
@@ -164,16 +189,16 @@ public class ProcessMonitorService : IDisposable
                 }
             }
         }
-        catch
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or UnauthorizedAccessException)
         {
-            // プロセス情報取得失敗は無視
+            // Win32 APIやアクセス権限の問題は無視
         }
     }
 
     /// <summary>
     /// UIAutomationを使ってブラウザのURLを取得する
     /// </summary>
-    private string GetBrowserUrl(IntPtr hwnd, string processName)
+    private static string GetBrowserUrl(IntPtr hwnd, string processName)
     {
         try
         {
@@ -218,9 +243,13 @@ public class ProcessMonitorService : IDisposable
                 }
             }
         }
-        catch
+        catch (ElementNotAvailableException)
         {
-            // UIAutomation失敗は無視
+            // ウィンドウが閉じられた等
+        }
+        catch (InvalidOperationException)
+        {
+            // UIAutomation要素にアクセスできない
         }
 
         return string.Empty;
@@ -262,6 +291,8 @@ public class ProcessMonitorService : IDisposable
 
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
         _timer.Stop();
         GC.SuppressFinalize(this);
     }

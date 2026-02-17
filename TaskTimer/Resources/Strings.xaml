@@ -61,6 +61,11 @@
     <sys:String x:Key="MessageCsvExportFailedFormat" xmlns:sys="clr-namespace:System;assembly=mscorlib">CSV export failed:\n{0}</sys:String>
     <sys:String x:Key="SaveStatusMessage" xmlns:sys="clr-namespace:System;assembly=mscorlib">Saved</sys:String>
 
+    <sys:String x:Key="MessageAlreadyRunning" xmlns:sys="clr-namespace:System;assembly=mscorlib">Task Timer is already running.</sys:String>
+    <sys:String x:Key="ConfirmDeleteTitle" xmlns:sys="clr-namespace:System;assembly=mscorlib">Confirm Delete</sys:String>
+    <sys:String x:Key="ConfirmDeleteTaskFormat" xmlns:sys="clr-namespace:System;assembly=mscorlib">Delete task "{0}"?</sys:String>
+    <sys:String x:Key="ConfirmClearCompletedFormat" xmlns:sys="clr-namespace:System;assembly=mscorlib">Delete {0} completed task(s)?</sys:String>
+
     <sys:String x:Key="TaskStateRunning" xmlns:sys="clr-namespace:System;assembly=mscorlib">? Running</sys:String>
     <sys:String x:Key="TaskStatePaused" xmlns:sys="clr-namespace:System;assembly=mscorlib">? Paused</sys:String>
     <sys:String x:Key="TaskStateStopped" xmlns:sys="clr-namespace:System;assembly=mscorlib">? Stopped</sys:String>

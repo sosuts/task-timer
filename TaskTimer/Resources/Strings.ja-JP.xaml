@@ -63,6 +63,11 @@
     <sys:String x:Key="MessageCsvExportFailedFormat">CSV出力に失敗しました:\n{0}</sys:String>
     <sys:String x:Key="SaveStatusMessage">保存しました</sys:String>
 
+    <sys:String x:Key="MessageAlreadyRunning">Task Timer は既に起動しています。</sys:String>
+    <sys:String x:Key="ConfirmDeleteTitle">削除の確認</sys:String>
+    <sys:String x:Key="ConfirmDeleteTaskFormat">タスク「{0}」を削除しますか？</sys:String>
+    <sys:String x:Key="ConfirmClearCompletedFormat">{0} 件の完了タスクを削除しますか？</sys:String>
+
     <sys:String x:Key="TaskStateRunning">⏱ 実行中</sys:String>
     <sys:String x:Key="TaskStatePaused">⏸ 一時停止</sys:String>
     <sys:String x:Key="TaskStateStopped">⏹ 停止</sys:String>

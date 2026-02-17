@@ -54,6 +54,21 @@ public class AppSettings
         new() { ProcessName = "EXCEL", WindowTitleContains = null, Category = TaskCategory.Excel, DefaultLabel = "Excel作業" },
     };
 
+    /// <summary>ウィンドウの位置 (X)</summary>
+    public double WindowLeft { get; set; } = double.NaN;
+
+    /// <summary>ウィンドウの位置 (Y)</summary>
+    public double WindowTop { get; set; } = double.NaN;
+
+    /// <summary>ウィンドウの幅</summary>
+    public double WindowWidth { get; set; } = 380;
+
+    /// <summary>ウィンドウの高さ</summary>
+    public double WindowHeight { get; set; } = 620;
+
+    /// <summary>削除時に確認ダイアログを表示</summary>
+    public bool ConfirmOnDelete { get; set; } = true;
+
     internal static readonly string SettingsDir = Path.GetDirectoryName(
         Environment.ProcessPath ?? AppContext.BaseDirectory)!;
 
@@ -67,9 +82,16 @@ public class AppSettings
 
     public void Save()
     {
-        Directory.CreateDirectory(SettingsDir);
-        var json = JsonSerializer.Serialize(this, JsonOptions);
-        File.WriteAllText(SettingsPath, json);
+        try
+        {
+            Directory.CreateDirectory(SettingsDir);
+            var json = JsonSerializer.Serialize(this, JsonOptions);
+            File.WriteAllText(SettingsPath, json);
+        }
+        catch
+        {
+            // 設定保存失敗は無視（読み取り専用フォルダ等）
+        }
     }
 
     public static AppSettings Load()

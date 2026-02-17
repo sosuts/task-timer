@@ -1,13 +1,13 @@
 namespace TaskTimer.Models;
 
 /// <summary>
-/// ブラウザのドメインとタスク名のマッピング
+/// Browser domain to task name mapping
 /// </summary>
 public class BrowserDomainMapping
 {
-    /// <summary>監視対象のドメイン（ブラウザのURLに含まれるか検索）</summary>
+    /// <summary>Domain to monitor (searches if browser URL contains this)</summary>
     public string Domain { get; set; } = string.Empty;
 
-    /// <summary>検知時に付けるタスク名</summary>
+    /// <summary>Task name to assign when detected</summary>
     public string TaskName { get; set; } = string.Empty;
 }
