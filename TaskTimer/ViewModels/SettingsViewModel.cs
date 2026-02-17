@@ -26,6 +26,15 @@ public partial class SettingsViewModel : ObservableObject
     private string _csvOutputDirectory = string.Empty;
 
     [ObservableProperty]
+    private string _outlookCalendarName = string.Empty;
+
+    [ObservableProperty]
+    private ObservableCollection<string> _outlookCalendarOptions = new();
+
+    [ObservableProperty]
+    private string _outlookCalendarStatus = string.Empty;
+
+    [ObservableProperty]
     private string _saveStatusMessage = string.Empty;
 
     [ObservableProperty]
@@ -57,6 +66,7 @@ public partial class SettingsViewModel : ObservableObject
         ProcessCheckIntervalSeconds = settings.ProcessCheckIntervalSeconds;
         AlwaysOnTop = settings.AlwaysOnTop;
         CsvOutputDirectory = settings.CsvOutputDirectory;
+        OutlookCalendarName = settings.OutlookCalendarName;
 
         foreach (var m in settings.BrowserDomainMappings)
         {
@@ -76,6 +86,9 @@ public partial class SettingsViewModel : ObservableObject
 
         SelectedFontSizeIndex = (int)settings.FontSize;
         SelectedLanguageIndex = (int)settings.Language;
+
+        // Outlook予定表一覧を初期ロード
+        LoadOutlookCalendars();
     }
 
     [RelayCommand]
@@ -109,6 +122,39 @@ public partial class SettingsViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void RefreshOutlookCalendars()
+    {
+        LoadOutlookCalendars();
+    }
+
+    private void LoadOutlookCalendars()
+    {
+        OutlookCalendarStatus = "";
+        try
+        {
+            var names = OutlookExportService.GetCalendarNames();
+            OutlookCalendarOptions.Clear();
+            foreach (var name in names)
+            {
+                OutlookCalendarOptions.Add(name);
+            }
+
+            if (OutlookCalendarOptions.Count > 0)
+            {
+                OutlookCalendarStatus = string.Format(
+                    LocalizationService.GetString("OutlookCalendarFoundFormat"),
+                    OutlookCalendarOptions.Count);
+            }
+        }
+        catch (Exception ex)
+        {
+            OutlookCalendarOptions.Clear();
+            OutlookCalendarStatus = LocalizationService.GetString("OutlookCalendarLoadFailed");
+            System.Diagnostics.Debug.WriteLine($"Outlook calendar load failed: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
     private void Save()
     {
         _settings.GitLabDomain = GitLabDomain;
@@ -116,6 +162,7 @@ public partial class SettingsViewModel : ObservableObject
         _settings.ProcessCheckIntervalSeconds = ProcessCheckIntervalSeconds;
         _settings.AlwaysOnTop = AlwaysOnTop;
         _settings.CsvOutputDirectory = CsvOutputDirectory;
+        _settings.OutlookCalendarName = OutlookCalendarName;
         _settings.FontSize = (FontSizePreference)SelectedFontSizeIndex;
         _settings.Language = (LanguagePreference)SelectedLanguageIndex;
 

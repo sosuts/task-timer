@@ -41,6 +41,9 @@ public class AppSettings
     /// <summary>CSV出力先ディレクトリ</summary>
     public string CsvOutputDirectory { get; set; } = "";
 
+    /// <summary>Outlook予定表名（空欄の場合は既定の予定表）</summary>
+    public string OutlookCalendarName { get; set; } = "";
+
     /// <summary>プロセスマッピング一覧</summary>
     public List<ProcessMapping> ProcessMappings { get; set; } = new()
     {

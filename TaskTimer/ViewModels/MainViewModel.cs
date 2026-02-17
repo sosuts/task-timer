@@ -433,6 +433,38 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    private void ExportToOutlook()
+    {
+        if (!Tasks.Any())
+        {
+            MessageBox.Show(LocalizationService.GetString("MessageOutlookNoTasks"),
+                LocalizationService.GetString("MessageOutlookExportedTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        try
+        {
+            var calendarName = string.IsNullOrWhiteSpace(_settings.OutlookCalendarName)
+                ? null
+                : _settings.OutlookCalendarName;
+            var count = OutlookExportService.Export(Tasks, calendarName);
+            var displayName = calendarName ?? "(既定)";
+            StatusMessage = LocalizationService.GetString("StatusOutlookExported");
+            MessageBox.Show(
+                string.Format(LocalizationService.GetString("MessageOutlookExportedFormat"), count, displayName),
+                LocalizationService.GetString("MessageOutlookExportedTitle"),
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                string.Format(LocalizationService.GetString("MessageOutlookExportFailedFormat"), ex.Message),
+                LocalizationService.GetString("MessageErrorTitle"),
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [RelayCommand]
     private void OpenSettings()
     {
         var settingsWindow = new SettingsWindow(_settings);

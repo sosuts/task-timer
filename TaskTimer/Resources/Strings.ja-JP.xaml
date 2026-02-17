@@ -61,6 +61,17 @@
     <sys:String x:Key="MessageCsvExportedFormat">CSVを出力しました:\n{0}</sys:String>
     <sys:String x:Key="MessageErrorTitle">エラー</sys:String>
     <sys:String x:Key="MessageCsvExportFailedFormat">CSV出力に失敗しました:\n{0}</sys:String>
+    <sys:String x:Key="TooltipExportOutlook">Outlook予定表に出力</sys:String>
+    <sys:String x:Key="StatusOutlookExported">Outlookに出力しました</sys:String>
+    <sys:String x:Key="MessageOutlookExportedTitle">Outlook出力</sys:String>
+    <sys:String x:Key="MessageOutlookExportedFormat">{0} 件の予定をOutlook予定表「{1}」に登録しました。</sys:String>
+    <sys:String x:Key="MessageOutlookExportFailedFormat">Outlook出力に失敗しました:\n{0}</sys:String>
+    <sys:String x:Key="LabelOutlookCalendarName">Outlook予定表名</sys:String>
+    <sys:String x:Key="DescOutlookCalendarName">タスクを登録する予定表名です。空欄の場合は既定の予定表。</sys:String>
+    <sys:String x:Key="MessageOutlookNoTasks">出力するタスクがありません。</sys:String>
+    <sys:String x:Key="ButtonRefreshCalendars">予定表一覧を更新</sys:String>
+    <sys:String x:Key="OutlookCalendarFoundFormat">{0} 件の予定表が見つかりました。</sys:String>
+    <sys:String x:Key="OutlookCalendarLoadFailed">Outlookに接続できませんでした。予定表名を手入力してください。</sys:String>
     <sys:String x:Key="SaveStatusMessage">保存しました</sys:String>
 
     <sys:String x:Key="MessageAlreadyRunning">Task Timer は既に起動しています。</sys:String>

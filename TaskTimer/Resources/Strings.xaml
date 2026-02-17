@@ -59,6 +59,17 @@
     <sys:String x:Key="MessageCsvExportedFormat" xmlns:sys="clr-namespace:System;assembly=mscorlib">CSV exported:\n{0}</sys:String>
     <sys:String x:Key="MessageErrorTitle" xmlns:sys="clr-namespace:System;assembly=mscorlib">Error</sys:String>
     <sys:String x:Key="MessageCsvExportFailedFormat" xmlns:sys="clr-namespace:System;assembly=mscorlib">CSV export failed:\n{0}</sys:String>
+    <sys:String x:Key="TooltipExportOutlook" xmlns:sys="clr-namespace:System;assembly=mscorlib">Export to Outlook</sys:String>
+    <sys:String x:Key="StatusOutlookExported" xmlns:sys="clr-namespace:System;assembly=mscorlib">Exported to Outlook</sys:String>
+    <sys:String x:Key="MessageOutlookExportedTitle" xmlns:sys="clr-namespace:System;assembly=mscorlib">Outlook Export</sys:String>
+    <sys:String x:Key="MessageOutlookExportedFormat" xmlns:sys="clr-namespace:System;assembly=mscorlib">{0} appointment(s) exported to Outlook calendar "{1}".</sys:String>
+    <sys:String x:Key="MessageOutlookExportFailedFormat" xmlns:sys="clr-namespace:System;assembly=mscorlib">Outlook export failed:\n{0}</sys:String>
+    <sys:String x:Key="LabelOutlookCalendarName" xmlns:sys="clr-namespace:System;assembly=mscorlib">Outlook Calendar Name</sys:String>
+    <sys:String x:Key="DescOutlookCalendarName" xmlns:sys="clr-namespace:System;assembly=mscorlib">Calendar name to export tasks to. Leave empty for default calendar.</sys:String>
+    <sys:String x:Key="MessageOutlookNoTasks" xmlns:sys="clr-namespace:System;assembly=mscorlib">No tasks to export.</sys:String>
+    <sys:String x:Key="ButtonRefreshCalendars" xmlns:sys="clr-namespace:System;assembly=mscorlib">Refresh calendar list</sys:String>
+    <sys:String x:Key="OutlookCalendarFoundFormat" xmlns:sys="clr-namespace:System;assembly=mscorlib">{0} calendar(s) found.</sys:String>
+    <sys:String x:Key="OutlookCalendarLoadFailed" xmlns:sys="clr-namespace:System;assembly=mscorlib">Could not connect to Outlook. You can type the calendar name manually.</sys:String>
     <sys:String x:Key="SaveStatusMessage" xmlns:sys="clr-namespace:System;assembly=mscorlib">Saved</sys:String>
 
     <sys:String x:Key="MessageAlreadyRunning" xmlns:sys="clr-namespace:System;assembly=mscorlib">Task Timer is already running.</sys:String>
