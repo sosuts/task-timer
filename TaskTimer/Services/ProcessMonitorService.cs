@@ -209,7 +209,6 @@ public class ProcessMonitorService : IDisposable
 
                 if (mapping != null)
                 {
-                    anyMappingFound = true;
                     var category = mapping.Category;
 
                     // ブラウザの場合、UIAutomationでURLを取得してドメインマッチを確認
@@ -232,6 +231,7 @@ public class ProcessMonitorService : IDisposable
                         }
 
                         // マッチしたドメインのタスク名を使用
+                        anyMappingFound = true;
                         if (_currentDetectedCategory != category || _currentWindowTitle != browserUrl)
                         {
                             _currentDetectedCategory = category;
@@ -247,6 +247,7 @@ public class ProcessMonitorService : IDisposable
                         return;
                     }
 
+                    anyMappingFound = true;
                     if (_currentDetectedCategory != category || _currentWindowTitle != windowTitle)
                     {
                         _currentDetectedCategory = category;
