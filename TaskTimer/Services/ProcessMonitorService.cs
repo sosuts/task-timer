@@ -19,6 +19,28 @@ public class ProcessMonitorService : IDisposable
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder text, int count);
 
+    [DllImport("user32.dll")]
+    private static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsWindowVisible(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
+
+    [DllImport("user32.dll")]
+    private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
+
+    private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+
+    private const uint GW_HWNDPREV = 3;
+    private const int GWL_EXSTYLE = -20;
+    private const int WS_EX_TOPMOST = 0x00000008;
+    private const uint MONITOR_DEFAULTTONEAREST = 2;
+
     private readonly System.Windows.Threading.DispatcherTimer _timer;
     private readonly AppSettings _settings;
     private TaskCategory? _currentDetectedCategory;
@@ -70,109 +92,188 @@ public class ProcessMonitorService : IDisposable
 
     public void Stop() => _timer.Stop();
 
+    /// <summary>
+    /// 各モニターで最前面にあるウィンドウを取得する
+    /// </summary>
+    private List<IntPtr> GetTopmostWindowsPerMonitor()
+    {
+        var windows = new List<IntPtr>();
+        var monitors = new Dictionary<IntPtr, IntPtr>();
+
+        // すべての表示可能なウィンドウを列挙
+        EnumWindows((hWnd, lParam) =>
+        {
+            if (!IsWindowVisible(hWnd))
+                return true;
+
+            // ウィンドウのモニターを取得
+            var monitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
+            if (monitor == IntPtr.Zero)
+                return true;
+
+            // このモニターで最初に見つかったウィンドウ、または
+            // より前面にあるウィンドウを記録
+            if (!monitors.ContainsKey(monitor))
+            {
+                monitors[monitor] = hWnd;
+            }
+            else
+            {
+                // Z-Orderで比較（より前面にあるウィンドウを保持）
+                var currentTopmost = monitors[monitor];
+                if (IsWindowMoreForeground(hWnd, currentTopmost))
+                {
+                    monitors[monitor] = hWnd;
+                }
+            }
+
+            return true;
+        }, IntPtr.Zero);
+
+        // 各モニターの最前面ウィンドウを結果に追加
+        windows.AddRange(monitors.Values);
+        return windows;
+    }
+
+    /// <summary>
+    /// hWnd1がhWnd2より前面にあるかチェック
+    /// </summary>
+    private bool IsWindowMoreForeground(IntPtr hWnd1, IntPtr hWnd2)
+    {
+        // TOPMOSTフラグをチェック
+        var exStyle1 = GetWindowLong(hWnd1, GWL_EXSTYLE);
+        var exStyle2 = GetWindowLong(hWnd2, GWL_EXSTYLE);
+        var isTopmost1 = (exStyle1 & WS_EX_TOPMOST) != 0;
+        var isTopmost2 = (exStyle2 & WS_EX_TOPMOST) != 0;
+
+        // 両方がTOPMOSTまたは両方が非TOPMOSTの場合、Z-Orderで比較
+        if (isTopmost1 == isTopmost2)
+        {
+            // Z-Orderを走査してどちらが前にあるか確認
+            var current = hWnd1;
+            while (current != IntPtr.Zero)
+            {
+                if (current == hWnd2)
+                    return true; // hWnd1の方が前面
+                current = GetWindow(current, GW_HWNDPREV);
+            }
+            return false;
+        }
+
+        // TOPMOSTが優先
+        return isTopmost1;
+    }
+
     private void CheckActiveProcess(object? sender, EventArgs e)
     {
         if (_disposed) return;
 
         try
         {
-            var hwnd = GetForegroundWindow();
-            if (hwnd == IntPtr.Zero) return;
+            // マルチディスプレイ対応：各モニターの最前面ウィンドウを取得
+            var topmostWindows = GetTopmostWindowsPerMonitor();
+            
+            bool anyMappingFound = false;
 
-            GetWindowThreadProcessId(hwnd, out var pid);
-            if (pid == 0) return;
-
-            Process? process = null;
-            try
+            foreach (var hwnd in topmostWindows)
             {
-                process = Process.GetProcessById((int)pid);
-            }
-            catch (ArgumentException)
-            {
-                // プロセスが既に終了している
-                return;
-            }
-            catch (InvalidOperationException)
-            {
-                // プロセス情報にアクセスできない
-                return;
-            }
+                if (hwnd == IntPtr.Zero) continue;
 
-            var processName = process.ProcessName;
+                GetWindowThreadProcessId(hwnd, out var pid);
+                if (pid == 0) continue;
 
-            var sb = new System.Text.StringBuilder(512);
-            GetWindowText(hwnd, sb, sb.Capacity);
-            var windowTitle = sb.ToString();
-
-            // ブラウザの場合、URLを取得してドメインマッピングをチェック
-            var mapping = FindMapping(processName, windowTitle);
-
-            if (mapping != null)
-            {
-                var category = mapping.Category;
-
-                // ブラウザの場合、UIAutomationでURLを取得してドメインマッチを確認
-                if (mapping.Category == TaskCategory.CodeReview && BrowserProcessNames.Contains(processName))
+                Process? process = null;
+                try
                 {
-                    var browserUrl = GetBrowserUrl(hwnd, processName);
-                    
-                    // URL情報を通知
-                    if (_lastDetectedBrowserUrl != browserUrl)
-                    {
-                        _lastDetectedBrowserUrl = browserUrl;
-                        BrowserTitleChanged?.Invoke(this, browserUrl);
-                    }
+                    process = Process.GetProcessById((int)pid);
+                }
+                catch (ArgumentException)
+                {
+                    // プロセスが既に終了している
+                    continue;
+                }
+                catch (InvalidOperationException)
+                {
+                    // プロセス情報にアクセスできない
+                    continue;
+                }
 
-                    var domainMapping = FindBrowserDomainMapping(browserUrl);
-                    if (domainMapping == null)
+                var processName = process.ProcessName;
+
+                var sb = new System.Text.StringBuilder(512);
+                GetWindowText(hwnd, sb, sb.Capacity);
+                var windowTitle = sb.ToString();
+
+                // ブラウザの場合、URLを取得してドメインマッピングをチェック
+                var mapping = FindMapping(processName, windowTitle);
+
+                if (mapping != null)
+                {
+                    anyMappingFound = true;
+                    var category = mapping.Category;
+
+                    // ブラウザの場合、UIAutomationでURLを取得してドメインマッチを確認
+                    if (mapping.Category == TaskCategory.CodeReview && BrowserProcessNames.Contains(processName))
                     {
-                        // どのドメインにもマッチしないブラウザは無視
-                        if (_currentDetectedCategory != null)
+                        var browserUrl = GetBrowserUrl(hwnd, processName);
+                        
+                        // URL情報を通知
+                        if (_lastDetectedBrowserUrl != browserUrl)
                         {
-                            _currentDetectedCategory = null;
-                            _currentWindowTitle = string.Empty;
-                            TaskLost?.Invoke(this, EventArgs.Empty);
+                            _lastDetectedBrowserUrl = browserUrl;
+                            BrowserTitleChanged?.Invoke(this, browserUrl);
+                        }
+
+                        var domainMapping = FindBrowserDomainMapping(browserUrl);
+                        if (domainMapping == null)
+                        {
+                            // どのドメインにもマッチしないブラウザは無視
+                            continue;
+                        }
+
+                        // マッチしたドメインのタスク名を使用
+                        if (_currentDetectedCategory != category || _currentWindowTitle != browserUrl)
+                        {
+                            _currentDetectedCategory = category;
+                            _currentWindowTitle = browserUrl;
+                            TaskDetected?.Invoke(this, new TaskDetectedEventArgs
+                            {
+                                Category = category,
+                                WindowTitle = windowTitle,
+                                ProcessName = processName,
+                                DefaultLabel = domainMapping.TaskName
+                            });
                         }
                         return;
                     }
 
-                    // マッチしたドメインのタスク名を使用
-                    if (_currentDetectedCategory != category || _currentWindowTitle != browserUrl)
+                    if (_currentDetectedCategory != category || _currentWindowTitle != windowTitle)
                     {
                         _currentDetectedCategory = category;
-                        _currentWindowTitle = browserUrl;
+                        _currentWindowTitle = windowTitle;
                         TaskDetected?.Invoke(this, new TaskDetectedEventArgs
                         {
                             Category = category,
                             WindowTitle = windowTitle,
                             ProcessName = processName,
-                            DefaultLabel = domainMapping.TaskName
+                            DefaultLabel = mapping.DefaultLabel
                         });
                     }
+
+                    // ブラウザ以外の場合、URLをクリア
+                    if (_lastDetectedBrowserUrl != string.Empty)
+                    {
+                        _lastDetectedBrowserUrl = string.Empty;
+                        BrowserTitleChanged?.Invoke(this, string.Empty);
+                    }
+
+                    // マッピングが見つかったので処理を終了
                     return;
                 }
-
-                if (_currentDetectedCategory != category || _currentWindowTitle != windowTitle)
-                {
-                    _currentDetectedCategory = category;
-                    _currentWindowTitle = windowTitle;
-                    TaskDetected?.Invoke(this, new TaskDetectedEventArgs
-                    {
-                        Category = category,
-                        WindowTitle = windowTitle,
-                        ProcessName = processName,
-                        DefaultLabel = mapping.DefaultLabel
-                    });
-                }
-
-                // ブラウザ以外の場合、URLをクリア
-                if (_lastDetectedBrowserUrl != string.Empty)
-                {
-                    _lastDetectedBrowserUrl = string.Empty;
-                    BrowserTitleChanged?.Invoke(this, string.Empty);
-                }
             }
-            else
+
+            // どのウィンドウもマッピングに該当しなかった場合
+            if (!anyMappingFound)
             {
                 if (_currentDetectedCategory != null)
                 {
