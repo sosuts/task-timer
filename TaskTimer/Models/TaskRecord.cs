@@ -40,6 +40,30 @@ public partial class TaskRecord : ObservableObject
     public DateTime? PauseStartTime { get; set; }
 
     /// <summary>
+    /// 検知元のプロセス名（例: chrome, devenv, Code）
+    /// </summary>
+    [ObservableProperty]
+    private string _processName = string.Empty;
+
+    /// <summary>
+    /// ブラウザの場合: 検知時のURL
+    /// </summary>
+    [ObservableProperty]
+    private string _detectedUrl = string.Empty;
+
+    /// <summary>
+    /// ブラウザの場合: 検知時のタブタイトル（ウィンドウタイトル）
+    /// </summary>
+    [ObservableProperty]
+    private string _detectedTabTitle = string.Empty;
+
+    /// <summary>
+    /// VS/VSCode/Office/TortoiseMerge: 開いているファイル名またはワークスペース名
+    /// </summary>
+    [ObservableProperty]
+    private string _detectedDocumentName = string.Empty;
+
+    /// <summary>
     /// 実質作業時間を算出
     /// </summary>
     public TimeSpan EffectiveElapsed => Elapsed - PausedDuration;
@@ -49,12 +73,19 @@ public partial class TaskRecord : ObservableObject
     /// </summary>
     public string ToCsvLine()
     {
-        return $"\"{Id}\",\"{TaskName}\",\"{Label}\",\"{Category}\"," +
-               $"\"{State}\",\"{StartTime:yyyy-MM-dd HH:mm:ss}\"," +
-               $"\"{EndTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? ""}\",\"{Elapsed:hh\\:mm\\:ss}\"," +
-               $"\"{PausedDuration:hh\\:mm\\:ss}\",\"{EffectiveElapsed:hh\\:mm\\:ss}\"";
+        return $"\"{ Id}\",\"{Escape(TaskName)}\",\"{Escape(Label)}\",\"{Category}\"," +
+               $"\"{ State}\",\"{StartTime:yyyy-MM-dd HH:mm:ss}\"," +
+               $"\"{ EndTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? ""}\",\"{Elapsed:hh\\:mm\\:ss}\"," +
+               $"\"{ PausedDuration:hh\\:mm\\:ss}\",\"{EffectiveElapsed:hh\\:mm\\:ss}\"," +
+               $"\"{ Escape(ProcessName)}\",\"{Escape(DetectedUrl)}\",\"{Escape(DetectedTabTitle)}\",\"{Escape(DetectedDocumentName)}\"";
     }
 
     public static string CsvHeader =>
-        "\"ID\",\"タスク名\",\"ラベル\",\"カテゴリ\",\"状態\",\"開始時刻\",\"終了時刻\",\"経過時間\",\"一時停止時間\",\"実質作業時間\"";
+        "\"ID\",\"タスク名\",\"ラベル\",\"カテゴリ\",\"状態\",\"開始時刻\",\"終了時刻\",\"経過時間\",\"一時停止時間\",\"実質作業時間\",\"プロセス名\",\"URL\",\"タブ名\",\"ドキュメント名\"";
+
+    private static string Escape(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return "";
+        return value.Replace("\"", "\"\"");
+    }
 }

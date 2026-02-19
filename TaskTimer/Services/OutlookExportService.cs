@@ -215,7 +215,7 @@ public static class OutlookExportService
 
     private static string BuildBody(TaskRecord record)
     {
-        return $"タスク名: {record.TaskName}\n" +
+        var body = $"タスク名: {record.TaskName}\n" +
                $"ラベル: {record.Label}\n" +
                $"カテゴリ: {record.Category}\n" +
                $"開始: {record.StartTime:yyyy-MM-dd HH:mm:ss}\n" +
@@ -223,6 +223,17 @@ public static class OutlookExportService
                $"経過時間: {record.Elapsed:hh\\:mm\\:ss}\n" +
                $"一時停止時間: {record.PausedDuration:hh\\:mm\\:ss}\n" +
                $"実質作業時間: {record.EffectiveElapsed:hh\\:mm\\:ss}";
+
+        if (!string.IsNullOrEmpty(record.ProcessName))
+            body += $"\nプロセス名: {record.ProcessName}";
+        if (!string.IsNullOrEmpty(record.DetectedUrl))
+            body += $"\nURL: {record.DetectedUrl}";
+        if (!string.IsNullOrEmpty(record.DetectedTabTitle))
+            body += $"\nタブ名: {record.DetectedTabTitle}";
+        if (!string.IsNullOrEmpty(record.DetectedDocumentName))
+            body += $"\nドキュメント: {record.DetectedDocumentName}";
+
+        return body;
     }
 
     private static void ReleaseComObject(object? obj)

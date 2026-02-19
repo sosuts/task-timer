@@ -146,7 +146,9 @@ public class ProcessMonitorService : IDisposable
                             Category = category,
                             WindowTitle = windowTitle,
                             ProcessName = processName,
-                            DefaultLabel = domainMapping.TaskName
+                            DefaultLabel = domainMapping.TaskName,
+                            BrowserUrl = browserUrl,
+                            DocumentName = string.Empty
                         });
                     }
                     return;
@@ -156,12 +158,17 @@ public class ProcessMonitorService : IDisposable
                 {
                     _currentDetectedCategory = category;
                     _currentWindowTitle = windowTitle;
+
+                    var documentName = ExtractDocumentName(processName, windowTitle);
+
                     TaskDetected?.Invoke(this, new TaskDetectedEventArgs
                     {
                         Category = category,
                         WindowTitle = windowTitle,
                         ProcessName = processName,
-                        DefaultLabel = mapping.DefaultLabel
+                        DefaultLabel = mapping.DefaultLabel,
+                        BrowserUrl = string.Empty,
+                        DocumentName = documentName
                     });
                 }
 
@@ -193,6 +200,66 @@ public class ProcessMonitorService : IDisposable
         {
             // Win32 APIやアクセス権限の問題は無視
         }
+    }
+
+    /// <summary>
+    /// ウィンドウタイトルからドキュメント名/ワークスペース名を抽出する
+    /// </summary>
+    private static string ExtractDocumentName(string processName, string windowTitle)
+    {
+        if (string.IsNullOrWhiteSpace(windowTitle))
+            return string.Empty;
+
+        // Visual Studio: "ファイル名 - プロジェクト名 - Microsoft Visual Studio"
+        if (processName.Equals("devenv", StringComparison.OrdinalIgnoreCase))
+        {
+            var vsIdx = windowTitle.LastIndexOf(" - Microsoft Visual Studio", StringComparison.OrdinalIgnoreCase);
+            if (vsIdx > 0)
+                return windowTitle[..vsIdx].Trim();
+            return windowTitle;
+        }
+
+        // VSCode: "ファイル名 - フォルダ名 - Visual Studio Code"
+        if (processName.Equals("Code", StringComparison.OrdinalIgnoreCase))
+        {
+            var vscIdx = windowTitle.LastIndexOf(" - Visual Studio Code", StringComparison.OrdinalIgnoreCase);
+            if (vscIdx > 0)
+                return windowTitle[..vscIdx].Trim();
+            return windowTitle;
+        }
+
+        // Word: "ドキュメント名 - Word" or "ドキュメント名 - Microsoft Word"
+        if (processName.Equals("WINWORD", StringComparison.OrdinalIgnoreCase))
+        {
+            var wordIdx = windowTitle.LastIndexOf(" - Word", StringComparison.OrdinalIgnoreCase);
+            if (wordIdx < 0)
+                wordIdx = windowTitle.LastIndexOf(" - Microsoft Word", StringComparison.OrdinalIgnoreCase);
+            if (wordIdx > 0)
+                return windowTitle[..wordIdx].Trim();
+            return windowTitle;
+        }
+
+        // Excel: "ブック名 - Excel" or "ブック名 - Microsoft Excel"
+        if (processName.Equals("EXCEL", StringComparison.OrdinalIgnoreCase))
+        {
+            var excelIdx = windowTitle.LastIndexOf(" - Excel", StringComparison.OrdinalIgnoreCase);
+            if (excelIdx < 0)
+                excelIdx = windowTitle.LastIndexOf(" - Microsoft Excel", StringComparison.OrdinalIgnoreCase);
+            if (excelIdx > 0)
+                return windowTitle[..excelIdx].Trim();
+            return windowTitle;
+        }
+
+        // TortoiseMerge: "ファイルパス - TortoiseMerge"
+        if (processName.Equals("TortoiseMerge", StringComparison.OrdinalIgnoreCase))
+        {
+            var tmIdx = windowTitle.LastIndexOf(" - TortoiseMerge", StringComparison.OrdinalIgnoreCase);
+            if (tmIdx > 0)
+                return windowTitle[..tmIdx].Trim();
+            return windowTitle;
+        }
+
+        return string.Empty;
     }
 
     /// <summary>
@@ -304,4 +371,10 @@ public class TaskDetectedEventArgs : EventArgs
     public string WindowTitle { get; set; } = string.Empty;
     public string ProcessName { get; set; } = string.Empty;
     public string DefaultLabel { get; set; } = string.Empty;
+
+    /// <summary>ブラウザの場合: URL</summary>
+    public string BrowserUrl { get; set; } = string.Empty;
+
+    /// <summary>VS/VSCode/Office/TortoiseMerge: ドキュメント名またはワークスペース名</summary>
+    public string DocumentName { get; set; } = string.Empty;
 }

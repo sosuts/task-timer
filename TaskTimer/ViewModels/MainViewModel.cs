@@ -220,6 +220,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (ActiveTask is { State: TaskState.Running } && ActiveTask.Category == e.Category)
         {
             AutoDetectStatus = e.DefaultLabel;
+            // プロセス詳細情報を更新（同じタスク内でファイル切り替えなど）
+            ActiveTask.ProcessName = e.ProcessName;
+            ActiveTask.DetectedUrl = e.BrowserUrl;
+            ActiveTask.DetectedTabTitle = e.WindowTitle;
+            ActiveTask.DetectedDocumentName = e.DocumentName;
             return;
         }
 
@@ -237,6 +242,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
             recentStopped.State = TaskState.Running;
             recentStopped.EndTime = null;
             recentStopped.PauseStartTime = null;
+            recentStopped.ProcessName = e.ProcessName;
+            recentStopped.DetectedUrl = e.BrowserUrl;
+            recentStopped.DetectedTabTitle = e.WindowTitle;
+            recentStopped.DetectedDocumentName = e.DocumentName;
             ActiveTask = recentStopped;
             StatusMessage = $"{recentStopped.TaskName}";
             AutoDetectStatus = e.DefaultLabel;
@@ -254,7 +263,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
             Label = e.DefaultLabel,
             Category = e.Category,
             State = TaskState.Running,
-            StartTime = DateTime.Now
+            StartTime = DateTime.Now,
+            ProcessName = e.ProcessName,
+            DetectedUrl = e.BrowserUrl,
+            DetectedTabTitle = e.WindowTitle,
+            DetectedDocumentName = e.DocumentName
         };
 
         Tasks.Add(task);

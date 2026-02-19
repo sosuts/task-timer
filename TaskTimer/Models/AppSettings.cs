@@ -55,6 +55,7 @@ public class AppSettings
         new() { ProcessName = "devenv", WindowTitleContains = null, Category = TaskCategory.VisualStudio, DefaultLabel = "Visual Studio作業" },
         new() { ProcessName = "WINWORD", WindowTitleContains = null, Category = TaskCategory.Word, DefaultLabel = "Word作業" },
         new() { ProcessName = "EXCEL", WindowTitleContains = null, Category = TaskCategory.Excel, DefaultLabel = "Excel作業" },
+        new() { ProcessName = "TortoiseMerge", WindowTitleContains = null, Category = TaskCategory.Other, DefaultLabel = "TortoiseMerge" },
     };
 
     /// <summary>ウィンドウの位置 (X)</summary>
