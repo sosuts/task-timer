@@ -216,11 +216,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         if (!IsAutoDetectEnabled) return;
 
-        // 同じカテゴリのタスクが実行中ならステータス更新のみ
-        if (ActiveTask is { State: TaskState.Running } && ActiveTask.Category == e.Category)
+        // 同じカテゴリ＆同じコンテキストのタスクが実行中なら詳細情報のみ更新
+        if (ActiveTask is { State: TaskState.Running } &&
+            ActiveTask.Category == e.Category &&
+            string.Equals(ActiveTask.ContextKey, e.ContextKey, StringComparison.OrdinalIgnoreCase))
         {
             AutoDetectStatus = e.DefaultLabel;
-            // プロセス詳細情報を更新（同じタスク内でファイル切り替えなど）
             ActiveTask.ProcessName = e.ProcessName;
             ActiveTask.DetectedUrl = e.BrowserUrl;
             ActiveTask.DetectedTabTitle = e.WindowTitle;
@@ -228,8 +229,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
-        // 同じカテゴリの直近の停止済みタスクがあれば再開（タスク継続）
-        var recentStopped = FindRecentStoppedTask(e.Category);
+        // 同じカテゴリ＆同じコンテキストで直近の停止済みタスクがあれば再開
+        var recentStopped = FindRecentStoppedTask(e.Category, e.ContextKey);
         if (recentStopped != null)
         {
             // 現在のタスクを停止
@@ -257,9 +258,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
             StopCurrentTask();
         }
 
+        // コンテキストキーに基づいたタスク名を生成
+        var contextLabel = !string.IsNullOrEmpty(e.ContextKey)
+            ? $"{e.DefaultLabel} ({e.ContextKey})"
+            : e.DefaultLabel;
+
         var task = new TaskRecord
         {
-            TaskName = $"[Auto] {e.DefaultLabel}",
+            TaskName = $"[Auto] {contextLabel}",
             Label = e.DefaultLabel,
             Category = e.Category,
             State = TaskState.Running,
@@ -267,7 +273,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
             ProcessName = e.ProcessName,
             DetectedUrl = e.BrowserUrl,
             DetectedTabTitle = e.WindowTitle,
-            DetectedDocumentName = e.DocumentName
+            DetectedDocumentName = e.DocumentName,
+            ContextKey = e.ContextKey
         };
 
         Tasks.Add(task);
@@ -278,9 +285,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// 同じカテゴリで最近停止されたタスクを探す（5分以内）
+    /// 同じカテゴリ＆同じコンテキストキーで最近停止されたタスクを探す（5分以内）
     /// </summary>
-    private TaskRecord? FindRecentStoppedTask(TaskCategory category)
+    private TaskRecord? FindRecentStoppedTask(TaskCategory category, string contextKey)
     {
         var threshold = TimeSpan.FromMinutes(5);
         TaskRecord? best = null;
@@ -289,6 +296,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             if (t.State == TaskState.Stopped &&
                 t.Category == category &&
+                string.Equals(t.ContextKey, contextKey, StringComparison.OrdinalIgnoreCase) &&
                 t.EndTime.HasValue &&
                 (DateTime.Now - t.EndTime.Value) < threshold)
             {

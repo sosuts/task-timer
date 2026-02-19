@@ -141,6 +141,9 @@ public class ProcessMonitorService : IDisposable
                     {
                         _currentDetectedCategory = category;
                         _currentWindowTitle = browserUrl;
+
+                        var repoPath = ExtractBrowserRepoPath(browserUrl);
+
                         TaskDetected?.Invoke(this, new TaskDetectedEventArgs
                         {
                             Category = category,
@@ -148,7 +151,8 @@ public class ProcessMonitorService : IDisposable
                             ProcessName = processName,
                             DefaultLabel = domainMapping.TaskName,
                             BrowserUrl = browserUrl,
-                            DocumentName = string.Empty
+                            DocumentName = string.Empty,
+                            ContextKey = repoPath
                         });
                     }
                     return;
@@ -160,6 +164,7 @@ public class ProcessMonitorService : IDisposable
                     _currentWindowTitle = windowTitle;
 
                     var documentName = ExtractDocumentName(processName, windowTitle);
+                    var contextKey = ExtractContextKey(processName, windowTitle, documentName);
 
                     TaskDetected?.Invoke(this, new TaskDetectedEventArgs
                     {
@@ -168,7 +173,8 @@ public class ProcessMonitorService : IDisposable
                         ProcessName = processName,
                         DefaultLabel = mapping.DefaultLabel,
                         BrowserUrl = string.Empty,
-                        DocumentName = documentName
+                        DocumentName = documentName,
+                        ContextKey = contextKey
                     });
                 }
 
@@ -260,6 +266,78 @@ public class ProcessMonitorService : IDisposable
         }
 
         return string.Empty;
+    }
+
+    /// <summary>
+    /// タスクの同一性判定に使うコンテキストキーを抽出する。
+    /// VSCode/VS: ワークスペース（フォルダ）名、Excel/Word/TortoiseMerge: ファイル名
+    /// </summary>
+    private static string ExtractContextKey(string processName, string windowTitle, string documentName)
+    {
+        if (string.IsNullOrWhiteSpace(documentName))
+            return string.Empty;
+
+        // VSCode: "ファイル名 - フォルダ名" → フォルダ名部分をコンテキストキーにする
+        if (processName.Equals("Code", StringComparison.OrdinalIgnoreCase))
+        {
+            // documentName = "ファイル名 - フォルダ名" の場合、最後の " - " 以降がワークスペース名
+            var lastSep = documentName.LastIndexOf(" - ", StringComparison.Ordinal);
+            if (lastSep > 0)
+                return documentName[(lastSep + 3)..].Trim();
+            return documentName;
+        }
+
+        // Visual Studio: "ファイル名 - プロジェクト名" → プロジェクト名部分をコンテキストキーにする
+        if (processName.Equals("devenv", StringComparison.OrdinalIgnoreCase))
+        {
+            var lastSep = documentName.LastIndexOf(" - ", StringComparison.Ordinal);
+            if (lastSep > 0)
+                return documentName[(lastSep + 3)..].Trim();
+            return documentName;
+        }
+
+        // Excel/Word/TortoiseMerge: ファイル名そのものがコンテキストキー
+        return documentName;
+    }
+
+    /// <summary>
+    /// ブラウザURLからリポジトリパス（owner/repo）を抽出する。
+    /// 例: https://github.com/user/repo/pull/123 → user/repo
+    ///     https://gitlab.example.com/group/project/-/merge_requests/1 → group/project
+    /// </summary>
+    private static string ExtractBrowserRepoPath(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+            return string.Empty;
+
+        try
+        {
+            // スキーマがない場合は付与
+            if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+                !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                url = "https://" + url;
+            }
+
+            var uri = new Uri(url);
+            var segments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+            // 最低2セグメント（owner/repo）が必要
+            if (segments.Length >= 2)
+            {
+                return $"{segments[0]}/{segments[1]}";
+            }
+
+            // 1セグメントの場合はそのまま
+            if (segments.Length == 1)
+                return segments[0];
+        }
+        catch (UriFormatException)
+        {
+            // URL解析失敗
+        }
+
+        return url;
     }
 
     /// <summary>
@@ -377,4 +455,10 @@ public class TaskDetectedEventArgs : EventArgs
 
     /// <summary>VS/VSCode/Office/TortoiseMerge: ドキュメント名またはワークスペース名</summary>
     public string DocumentName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// タスクの同一性を判定するためのコンテキストキー。
+    /// ブラウザ: リポジトリパス、VSCode/VS: ワークスペース名、Office: ファイル名
+    /// </summary>
+    public string ContextKey { get; set; } = string.Empty;
 }

@@ -64,6 +64,13 @@ public partial class TaskRecord : ObservableObject
     private string _detectedDocumentName = string.Empty;
 
     /// <summary>
+    /// タスクの同一性を判定するためのコンテキストキー。
+    /// VSCode/VS: ワークスペース名、Excel/Word: ファイル名、ブラウザ: リポジトリパス
+    /// </summary>
+    [ObservableProperty]
+    private string _contextKey = string.Empty;
+
+    /// <summary>
     /// 実質作業時間を算出
     /// </summary>
     public TimeSpan EffectiveElapsed => Elapsed - PausedDuration;
