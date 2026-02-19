@@ -417,12 +417,7 @@ public class ProcessMonitorService : IDisposable
         {
             // ウィンドウタイトルから開いているプロジェクト/ソリューション名を抽出
             // 通常「ファイル名 - プロジェクト名 - Visual Studio」形式
-            var parts = windowTitle.Split(new[] { " - " }, StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length >= 2)
-            {
-                return parts[1]; // プロジェクト/ソリューション名
-            }
-            return windowTitle;
+            return ExtractFromWindowTitle(windowTitle, 1);
         }
 
         // VS Code
@@ -430,10 +425,11 @@ public class ProcessMonitorService : IDisposable
         {
             // ウィンドウタイトルから開いているワークスペース/フォルダ名を抽出
             // 通常「ファイル名 - フォルダ名 - Visual Studio Code」形式
-            var parts = windowTitle.Split(new[] { " - " }, StringSplitOptions.RemoveEmptyEntries);
+            // 最後から2番目の部分がワークスペース/フォルダ名
+            var parts = SplitWindowTitle(windowTitle);
             if (parts.Length >= 2)
             {
-                return parts[parts.Length - 2]; // ワークスペース/フォルダ名
+                return parts[^2]; // 配列の最後から2番目
             }
             return windowTitle;
         }
@@ -443,12 +439,7 @@ public class ProcessMonitorService : IDisposable
         {
             // ウィンドウタイトルからファイル名を抽出
             // 通常「ファイル名 - Excel」形式
-            var parts = windowTitle.Split(new[] { " - " }, StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length > 0)
-            {
-                return parts[0]; // ファイル名
-            }
-            return windowTitle;
+            return ExtractFromWindowTitle(windowTitle, 0);
         }
 
         // Word
@@ -456,12 +447,7 @@ public class ProcessMonitorService : IDisposable
         {
             // ウィンドウタイトルからファイル名を抽出
             // 通常「ファイル名 - Word」形式
-            var parts = windowTitle.Split(new[] { " - " }, StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length > 0)
-            {
-                return parts[0]; // ファイル名
-            }
-            return windowTitle;
+            return ExtractFromWindowTitle(windowTitle, 0);
         }
 
         // TortoiseMerge
@@ -469,15 +455,31 @@ public class ProcessMonitorService : IDisposable
         {
             // ウィンドウタイトルからファイル名を抽出
             // 通常「ファイル名 - TortoiseMerge」形式
-            var parts = windowTitle.Split(new[] { " - " }, StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length > 0)
-            {
-                return parts[0]; // ファイル名
-            }
-            return windowTitle;
+            return ExtractFromWindowTitle(windowTitle, 0);
         }
 
         // その他のプロセスはウィンドウタイトルをそのまま返す
+        return windowTitle;
+    }
+
+    /// <summary>
+    /// ウィンドウタイトルを " - " で分割
+    /// </summary>
+    private static string[] SplitWindowTitle(string windowTitle)
+    {
+        return windowTitle.Split(new[] { " - " }, StringSplitOptions.RemoveEmptyEntries);
+    }
+
+    /// <summary>
+    /// ウィンドウタイトルから指定インデックスの部分を抽出
+    /// </summary>
+    private static string ExtractFromWindowTitle(string windowTitle, int index)
+    {
+        var parts = SplitWindowTitle(windowTitle);
+        if (parts.Length > index)
+        {
+            return parts[index];
+        }
         return windowTitle;
     }
 
