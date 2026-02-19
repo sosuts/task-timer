@@ -236,12 +236,14 @@ public class ProcessMonitorService : IDisposable
                         {
                             _currentDetectedCategory = category;
                             _currentWindowTitle = browserUrl;
+                            var contextInfo = GetContextInfo(processName, windowTitle, browserUrl);
                             TaskDetected?.Invoke(this, new TaskDetectedEventArgs
                             {
                                 Category = category,
                                 WindowTitle = windowTitle,
                                 ProcessName = processName,
-                                DefaultLabel = domainMapping.TaskName
+                                DefaultLabel = domainMapping.TaskName,
+                                ContextInfo = contextInfo
                             });
                         }
                         return;
@@ -252,12 +254,14 @@ public class ProcessMonitorService : IDisposable
                     {
                         _currentDetectedCategory = category;
                         _currentWindowTitle = windowTitle;
+                        var contextInfo = GetContextInfo(processName, windowTitle, string.Empty);
                         TaskDetected?.Invoke(this, new TaskDetectedEventArgs
                         {
                             Category = category,
                             WindowTitle = windowTitle,
                             ProcessName = processName,
-                            DefaultLabel = mapping.DefaultLabel
+                            DefaultLabel = mapping.DefaultLabel,
+                            ContextInfo = contextInfo
                         });
                     }
 
@@ -391,6 +395,122 @@ public class ProcessMonitorService : IDisposable
         return null;
     }
 
+    /// <summary>
+    /// プロセスに応じたコンテキスト情報を取得する
+    /// </summary>
+    private string GetContextInfo(string processName, string windowTitle, string browserUrl)
+    {
+        // ブラウザの場合はURLとタブ名を返す
+        if (BrowserProcessNames.Contains(processName))
+        {
+            if (!string.IsNullOrEmpty(browserUrl))
+            {
+                // ウィンドウタイトルからタブ名を抽出（ブラウザは通常「タイトル - ブラウザ名」形式）
+                var tabName = ExtractTabName(windowTitle, processName);
+                return string.IsNullOrEmpty(tabName) ? browserUrl : $"{browserUrl} | {tabName}";
+            }
+            return windowTitle;
+        }
+
+        // Visual Studio
+        if (processName.Equals("devenv", StringComparison.OrdinalIgnoreCase))
+        {
+            // ウィンドウタイトルから開いているプロジェクト/ソリューション名を抽出
+            // 通常「ファイル名 - プロジェクト名 - Visual Studio」形式
+            var parts = windowTitle.Split(new[] { " - " }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length >= 2)
+            {
+                return parts[1]; // プロジェクト/ソリューション名
+            }
+            return windowTitle;
+        }
+
+        // VS Code
+        if (processName.Equals("Code", StringComparison.OrdinalIgnoreCase))
+        {
+            // ウィンドウタイトルから開いているワークスペース/フォルダ名を抽出
+            // 通常「ファイル名 - フォルダ名 - Visual Studio Code」形式
+            var parts = windowTitle.Split(new[] { " - " }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length >= 2)
+            {
+                return parts[parts.Length - 2]; // ワークスペース/フォルダ名
+            }
+            return windowTitle;
+        }
+
+        // Excel
+        if (processName.Equals("EXCEL", StringComparison.OrdinalIgnoreCase))
+        {
+            // ウィンドウタイトルからファイル名を抽出
+            // 通常「ファイル名 - Excel」形式
+            var parts = windowTitle.Split(new[] { " - " }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length > 0)
+            {
+                return parts[0]; // ファイル名
+            }
+            return windowTitle;
+        }
+
+        // Word
+        if (processName.Equals("WINWORD", StringComparison.OrdinalIgnoreCase))
+        {
+            // ウィンドウタイトルからファイル名を抽出
+            // 通常「ファイル名 - Word」形式
+            var parts = windowTitle.Split(new[] { " - " }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length > 0)
+            {
+                return parts[0]; // ファイル名
+            }
+            return windowTitle;
+        }
+
+        // TortoiseMerge
+        if (processName.Equals("TortoiseMerge", StringComparison.OrdinalIgnoreCase))
+        {
+            // ウィンドウタイトルからファイル名を抽出
+            // 通常「ファイル名 - TortoiseMerge」形式
+            var parts = windowTitle.Split(new[] { " - " }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length > 0)
+            {
+                return parts[0]; // ファイル名
+            }
+            return windowTitle;
+        }
+
+        // その他のプロセスはウィンドウタイトルをそのまま返す
+        return windowTitle;
+    }
+
+    /// <summary>
+    /// ウィンドウタイトルからブラウザのタブ名を抽出
+    /// </summary>
+    private string ExtractTabName(string windowTitle, string processName)
+    {
+        if (string.IsNullOrEmpty(windowTitle)) return string.Empty;
+
+        // ブラウザごとのタイトル形式に対応
+        // Chrome/Edge/Brave: "タブ名 - Google Chrome" 形式
+        // Firefox: "タブ名 - Mozilla Firefox" 形式
+        var browserSuffixes = new[]
+        {
+            " - Google Chrome",
+            " - Microsoft Edge",
+            " - Brave",
+            " - Mozilla Firefox",
+            " - Opera"
+        };
+
+        foreach (var suffix in browserSuffixes)
+        {
+            if (windowTitle.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+            {
+                return windowTitle[..^suffix.Length].Trim();
+            }
+        }
+
+        return windowTitle;
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
@@ -406,4 +526,5 @@ public class TaskDetectedEventArgs : EventArgs
     public string WindowTitle { get; set; } = string.Empty;
     public string ProcessName { get; set; } = string.Empty;
     public string DefaultLabel { get; set; } = string.Empty;
+    public string ContextInfo { get; set; } = string.Empty;
 }

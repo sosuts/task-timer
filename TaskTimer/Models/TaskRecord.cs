@@ -34,6 +34,12 @@ public partial class TaskRecord : ObservableObject
     [ObservableProperty]
     private TimeSpan _pausedDuration = TimeSpan.Zero;
 
+    [ObservableProperty]
+    private string _processName = string.Empty;
+
+    [ObservableProperty]
+    private string _contextInfo = string.Empty;
+
     /// <summary>
     /// 一時停止開始時刻（一時停止中のみ有効）
     /// </summary>
@@ -52,9 +58,10 @@ public partial class TaskRecord : ObservableObject
         return $"\"{Id}\",\"{TaskName}\",\"{Label}\",\"{Category}\"," +
                $"\"{State}\",\"{StartTime:yyyy-MM-dd HH:mm:ss}\"," +
                $"\"{EndTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? ""}\",\"{Elapsed:hh\\:mm\\:ss}\"," +
-               $"\"{PausedDuration:hh\\:mm\\:ss}\",\"{EffectiveElapsed:hh\\:mm\\:ss}\"";
+               $"\"{PausedDuration:hh\\:mm\\:ss}\",\"{EffectiveElapsed:hh\\:mm\\:ss}\"," +
+               $"\"{ProcessName}\",\"{ContextInfo}\"";
     }
 
     public static string CsvHeader =>
-        "\"ID\",\"タスク名\",\"ラベル\",\"カテゴリ\",\"状態\",\"開始時刻\",\"終了時刻\",\"経過時間\",\"一時停止時間\",\"実質作業時間\"";
+        "\"ID\",\"タスク名\",\"ラベル\",\"カテゴリ\",\"状態\",\"開始時刻\",\"終了時刻\",\"経過時間\",\"一時停止時間\",\"実質作業時間\",\"プロセス名\",\"コンテキスト情報\"";
 }
