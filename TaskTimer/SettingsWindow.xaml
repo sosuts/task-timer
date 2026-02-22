@@ -173,6 +173,35 @@
                                  Text="{Binding CsvOutputDirectory, UpdateSourceTrigger=PropertyChanged}"/>
                     </StackPanel>
                 </Border>
+
+                <Border Style="{StaticResource Card}" Margin="0,0,0,12" Padding="16">
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource LabelOutlookCalendarName}" Style="{StaticResource SettingsSectionTitleText}"
+                                   Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,4"/>
+                        <TextBlock Text="{DynamicResource DescOutlookCalendarName}"
+                                   Style="{StaticResource SettingsDescriptionText}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8"
+                                   TextWrapping="Wrap"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ComboBox Grid.Column="0" Style="{StaticResource ModernComboBox}"
+                                      IsEditable="True"
+                                      ItemsSource="{Binding OutlookCalendarOptions}"
+                                      Text="{Binding OutlookCalendarName, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Button Grid.Column="1" Content="&#xE72C;" FontFamily="Segoe MDL2 Assets"
+                                    ToolTip="{DynamicResource ButtonRefreshCalendars}"
+                                    Width="32" Height="32" Margin="8,0,0,0"
+                                    VerticalAlignment="Center" Cursor="Hand"
+                                    Style="{StaticResource SettingsDeleteIconButton}"
+                                    Command="{Binding RefreshOutlookCalendarsCommand}"/>
+                        </Grid>
+                        <TextBlock Text="{Binding OutlookCalendarStatus}"
+                                   Style="{StaticResource SettingsDescriptionText}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,6,0,0"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
             </StackPanel>
         </ScrollViewer>
 

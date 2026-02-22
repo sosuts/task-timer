@@ -302,6 +302,138 @@ public class ProcessMonitorService : IDisposable
     }
 
     /// <summary>
+    /// ウィンドウタイトルからドキュメント名/ワークスペース名を抽出する
+    /// </summary>
+    private static string ExtractDocumentName(string processName, string windowTitle)
+    {
+        if (string.IsNullOrWhiteSpace(windowTitle))
+            return string.Empty;
+
+        // Visual Studio: "ファイル名 - プロジェクト名 - Microsoft Visual Studio"
+        if (processName.Equals("devenv", StringComparison.OrdinalIgnoreCase))
+        {
+            var vsIdx = windowTitle.LastIndexOf(" - Microsoft Visual Studio", StringComparison.OrdinalIgnoreCase);
+            if (vsIdx > 0)
+                return windowTitle[..vsIdx].Trim();
+            return windowTitle;
+        }
+
+        // VSCode: "ファイル名 - フォルダ名 - Visual Studio Code"
+        if (processName.Equals("Code", StringComparison.OrdinalIgnoreCase))
+        {
+            var vscIdx = windowTitle.LastIndexOf(" - Visual Studio Code", StringComparison.OrdinalIgnoreCase);
+            if (vscIdx > 0)
+                return windowTitle[..vscIdx].Trim();
+            return windowTitle;
+        }
+
+        // Word: "ドキュメント名 - Word" or "ドキュメント名 - Microsoft Word"
+        if (processName.Equals("WINWORD", StringComparison.OrdinalIgnoreCase))
+        {
+            var wordIdx = windowTitle.LastIndexOf(" - Word", StringComparison.OrdinalIgnoreCase);
+            if (wordIdx < 0)
+                wordIdx = windowTitle.LastIndexOf(" - Microsoft Word", StringComparison.OrdinalIgnoreCase);
+            if (wordIdx > 0)
+                return windowTitle[..wordIdx].Trim();
+            return windowTitle;
+        }
+
+        // Excel: "ブック名 - Excel" or "ブック名 - Microsoft Excel"
+        if (processName.Equals("EXCEL", StringComparison.OrdinalIgnoreCase))
+        {
+            var excelIdx = windowTitle.LastIndexOf(" - Excel", StringComparison.OrdinalIgnoreCase);
+            if (excelIdx < 0)
+                excelIdx = windowTitle.LastIndexOf(" - Microsoft Excel", StringComparison.OrdinalIgnoreCase);
+            if (excelIdx > 0)
+                return windowTitle[..excelIdx].Trim();
+            return windowTitle;
+        }
+
+        // TortoiseMerge: "ファイルパス - TortoiseMerge"
+        if (processName.Equals("TortoiseMerge", StringComparison.OrdinalIgnoreCase))
+        {
+            var tmIdx = windowTitle.LastIndexOf(" - TortoiseMerge", StringComparison.OrdinalIgnoreCase);
+            if (tmIdx > 0)
+                return windowTitle[..tmIdx].Trim();
+            return windowTitle;
+        }
+
+        return string.Empty;
+    }
+
+    /// <summary>
+    /// タスクの同一性判定に使うコンテキストキーを抽出する。
+    /// VSCode/VS: ワークスペース（フォルダ）名、Excel/Word/TortoiseMerge: ファイル名
+    /// </summary>
+    private static string ExtractContextKey(string processName, string windowTitle, string documentName)
+    {
+        if (string.IsNullOrWhiteSpace(documentName))
+            return string.Empty;
+
+        // VSCode: "ファイル名 - フォルダ名" → フォルダ名部分をコンテキストキーにする
+        if (processName.Equals("Code", StringComparison.OrdinalIgnoreCase))
+        {
+            // documentName = "ファイル名 - フォルダ名" の場合、最後の " - " 以降がワークスペース名
+            var lastSep = documentName.LastIndexOf(" - ", StringComparison.Ordinal);
+            if (lastSep > 0)
+                return documentName[(lastSep + 3)..].Trim();
+            return documentName;
+        }
+
+        // Visual Studio: "ファイル名 - プロジェクト名" → プロジェクト名部分をコンテキストキーにする
+        if (processName.Equals("devenv", StringComparison.OrdinalIgnoreCase))
+        {
+            var lastSep = documentName.LastIndexOf(" - ", StringComparison.Ordinal);
+            if (lastSep > 0)
+                return documentName[(lastSep + 3)..].Trim();
+            return documentName;
+        }
+
+        // Excel/Word/TortoiseMerge: ファイル名そのものがコンテキストキー
+        return documentName;
+    }
+
+    /// <summary>
+    /// ブラウザURLからリポジトリパス（owner/repo）を抽出する。
+    /// 例: https://github.com/user/repo/pull/123 → user/repo
+    ///     https://gitlab.example.com/group/project/-/merge_requests/1 → group/project
+    /// </summary>
+    private static string ExtractBrowserRepoPath(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+            return string.Empty;
+
+        try
+        {
+            // スキーマがない場合は付与
+            if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+                !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                url = "https://" + url;
+            }
+
+            var uri = new Uri(url);
+            var segments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+            // 最低2セグメント（owner/repo）が必要
+            if (segments.Length >= 2)
+            {
+                return $"{segments[0]}/{segments[1]}";
+            }
+
+            // 1セグメントの場合はそのまま
+            if (segments.Length == 1)
+                return segments[0];
+        }
+        catch (UriFormatException)
+        {
+            // URL解析失敗
+        }
+
+        return url;
+    }
+
+    /// <summary>
     /// UIAutomationを使ってブラウザのURLを取得する
     /// </summary>
     private static string GetBrowserUrl(IntPtr hwnd, string processName)

@@ -41,6 +41,9 @@ public class AppSettings
     /// <summary>CSV出力先ディレクトリ</summary>
     public string CsvOutputDirectory { get; set; } = "";
 
+    /// <summary>Outlook予定表名（空欄の場合は既定の予定表）</summary>
+    public string OutlookCalendarName { get; set; } = "";
+
     /// <summary>プロセスマッピング一覧</summary>
     public List<ProcessMapping> ProcessMappings { get; set; } = new()
     {
@@ -52,6 +55,7 @@ public class AppSettings
         new() { ProcessName = "devenv", WindowTitleContains = null, Category = TaskCategory.VisualStudio, DefaultLabel = "Visual Studio作業" },
         new() { ProcessName = "WINWORD", WindowTitleContains = null, Category = TaskCategory.Word, DefaultLabel = "Word作業" },
         new() { ProcessName = "EXCEL", WindowTitleContains = null, Category = TaskCategory.Excel, DefaultLabel = "Excel作業" },
+        new() { ProcessName = "TortoiseMerge", WindowTitleContains = null, Category = TaskCategory.Other, DefaultLabel = "TortoiseMerge" },
     };
 
     /// <summary>ウィンドウの位置 (X)</summary>

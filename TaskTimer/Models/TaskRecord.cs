@@ -46,6 +46,37 @@ public partial class TaskRecord : ObservableObject
     public DateTime? PauseStartTime { get; set; }
 
     /// <summary>
+    /// 検知元のプロセス名（例: chrome, devenv, Code）
+    /// </summary>
+    [ObservableProperty]
+    private string _processName = string.Empty;
+
+    /// <summary>
+    /// ブラウザの場合: 検知時のURL
+    /// </summary>
+    [ObservableProperty]
+    private string _detectedUrl = string.Empty;
+
+    /// <summary>
+    /// ブラウザの場合: 検知時のタブタイトル（ウィンドウタイトル）
+    /// </summary>
+    [ObservableProperty]
+    private string _detectedTabTitle = string.Empty;
+
+    /// <summary>
+    /// VS/VSCode/Office/TortoiseMerge: 開いているファイル名またはワークスペース名
+    /// </summary>
+    [ObservableProperty]
+    private string _detectedDocumentName = string.Empty;
+
+    /// <summary>
+    /// タスクの同一性を判定するためのコンテキストキー。
+    /// VSCode/VS: ワークスペース名、Excel/Word: ファイル名、ブラウザ: リポジトリパス
+    /// </summary>
+    [ObservableProperty]
+    private string _contextKey = string.Empty;
+
+    /// <summary>
     /// 実質作業時間を算出
     /// </summary>
     public TimeSpan EffectiveElapsed => Elapsed - PausedDuration;
