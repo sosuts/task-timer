@@ -11,6 +11,7 @@ public partial class App : Application
 {
     private TaskbarIcon? _notifyIcon;
     private static Mutex? _mutex;
+    private static bool _ownsMutex;
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool DestroyIcon(IntPtr hIcon);
@@ -23,6 +24,8 @@ public partial class App : Application
 
         if (!createdNew)
         {
+            _mutex.Dispose();
+            _mutex = null;
             System.Windows.MessageBox.Show(
                 LocalizationService.GetString("MessageAlreadyRunning"),
                 LocalizationService.GetString("AppTitle"),
@@ -31,6 +34,8 @@ public partial class App : Application
             Shutdown();
             return;
         }
+
+        _ownsMutex = true;
 
         base.OnStartup(e);
 
@@ -77,12 +82,11 @@ public partial class App : Application
     private void ExitApp()
     {
         _notifyIcon?.Dispose();
+        _notifyIcon = null;
         if (MainWindow is MainWindow mw)
         {
             mw.ForceClose();
         }
-        _mutex?.ReleaseMutex();
-        _mutex?.Dispose();
         Shutdown();
     }
 
@@ -113,8 +117,12 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         _notifyIcon?.Dispose();
-        _mutex?.ReleaseMutex();
-        _mutex?.Dispose();
+        if (_ownsMutex)
+        {
+            _mutex?.ReleaseMutex();
+            _mutex?.Dispose();
+            _ownsMutex = false;
+        }
         base.OnExit(e);
     }
 }
