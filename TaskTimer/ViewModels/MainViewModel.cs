@@ -258,9 +258,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             recentStopped.EndTime = null;
             recentStopped.PauseStartTime = null;
             recentStopped.ProcessName = e.ProcessName;
-            recentStopped.DetectedUrl = e.BrowserUrl;
-            recentStopped.DetectedTabTitle = e.WindowTitle;
-            recentStopped.DetectedDocumentName = e.DocumentName;
+            recentStopped.ContextInfo = e.ContextInfo;
             ActiveTask = recentStopped;
             StatusMessage = $"{recentStopped.TaskName}";
             AutoDetectStatus = e.DefaultLabel;
@@ -285,10 +283,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             State = TaskState.Running,
             StartTime = DateTime.Now,
             ProcessName = e.ProcessName,
-            DetectedUrl = e.BrowserUrl,
-            DetectedTabTitle = e.WindowTitle,
-            DetectedDocumentName = e.DocumentName,
-            ContextKey = e.ContextKey
+            ContextInfo = e.ContextInfo
         };
 
         Tasks.Add(task);
