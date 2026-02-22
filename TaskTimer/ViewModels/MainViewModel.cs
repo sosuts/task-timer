@@ -15,6 +15,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private ProcessMonitorService _processMonitor;
     private readonly DispatcherTimer _tickTimer;
     private readonly DispatcherTimer _clockTimer;
+    private int _autoSaveCounter;
 
     [ObservableProperty]
     private ObservableCollection<TaskRecord> _tasks = new();
@@ -118,6 +119,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _idleService.Start();
         _processMonitor.Start();
 
+        // 前回セッションのタスクを復元
+        var savedTasks = TaskSessionService.Load();
+        foreach (var t in savedTasks)
+            Tasks.Add(t);
+
         UpdateClock();
     }
 
@@ -169,6 +175,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
 
         UpdateTotalFocusTime();
+
+        // 1分ごとにセッションを自動保存
+        _autoSaveCounter++;
+        if (_autoSaveCounter >= 60)
+        {
+            _autoSaveCounter = 0;
+            TaskSessionService.Save(Tasks);
+        }
     }
 
     private void UpdateTotalFocusTime()
@@ -375,6 +389,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         NewTaskName = string.Empty;
         NewTaskLabel = string.Empty;
+        TaskSessionService.Save(Tasks);
     }
 
     [RelayCommand]
@@ -434,6 +449,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             CurrentElapsedDisplay = "00:00";
         }
         Tasks.Remove(task);
+        TaskSessionService.Save(Tasks);
     }
 
     [RelayCommand]
@@ -523,6 +539,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             Tasks.Remove(t);
         }
+        TaskSessionService.Save(Tasks);
     }
 
     private void StopCurrentTask()
@@ -539,6 +556,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         ActiveTask.EndTime = DateTime.Now;
         ActiveTask.Elapsed = ActiveTask.EndTime.Value - ActiveTask.StartTime - ActiveTask.PausedDuration;
         ActiveTask = null;
+        TaskSessionService.Save(Tasks);
     }
 
     private void ApplyFontSize(FontSizePreference pref)
@@ -569,6 +587,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         _tickTimer.Stop();
         _clockTimer.Stop();
+        TaskSessionService.Save(Tasks);
         _idleService.Dispose();
         _processMonitor.Dispose();
         GC.SuppressFinalize(this);
