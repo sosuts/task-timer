@@ -185,7 +185,7 @@ public class ProcessMonitorService : IDisposable
         {
             // マルチディスプレイ対応：各モニターの最前面ウィンドウを取得
             var topmostWindows = GetTopmostWindowsPerMonitor();
-            
+
             bool anyMappingFound = false;
 
             foreach (var hwnd in topmostWindows)
@@ -228,7 +228,7 @@ public class ProcessMonitorService : IDisposable
                     if (mapping.Category == TaskCategory.CodeReview && BrowserProcessNames.Contains(processName))
                     {
                         var browserUrl = GetBrowserUrl(hwnd, processName);
-                        
+
                         // URL情報を通知
                         if (_lastDetectedBrowserUrl != browserUrl)
                         {
@@ -256,7 +256,9 @@ public class ProcessMonitorService : IDisposable
                                 WindowTitle = windowTitle,
                                 ProcessName = processName,
                                 DefaultLabel = domainMapping.TaskName,
-                                ContextInfo = contextInfo
+                                ContextInfo = contextInfo,
+                                ContextKey = contextInfo,
+                                BrowserUrl = browserUrl
                             });
                         }
                         return;
@@ -274,7 +276,9 @@ public class ProcessMonitorService : IDisposable
                             WindowTitle = windowTitle,
                             ProcessName = processName,
                             DefaultLabel = mapping.DefaultLabel,
-                            ContextInfo = contextInfo
+                            ContextInfo = contextInfo,
+                            ContextKey = contextInfo,
+                            DocumentName = contextInfo
                         });
                     }
 
@@ -478,7 +482,7 @@ public class ProcessMonitorService : IDisposable
                     urlBar = comboBox.FindFirst(TreeScope.Descendants,
                         new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Edit));
                 }
-                
+
                 // 見つからない場合は直接Editを探す
                 urlBar ??= element.FindFirst(TreeScope.Descendants,
                     new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Edit));
@@ -674,4 +678,7 @@ public class TaskDetectedEventArgs : EventArgs
     public string ProcessName { get; set; } = string.Empty;
     public string DefaultLabel { get; set; } = string.Empty;
     public string ContextInfo { get; set; } = string.Empty;
+    public string ContextKey { get; set; } = string.Empty;
+    public string BrowserUrl { get; set; } = string.Empty;
+    public string DocumentName { get; set; } = string.Empty;
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Windows;
 using TaskTimer.Models;
 using TaskTimer.ViewModels;
@@ -15,5 +16,14 @@ public partial class SettingsWindow : Window
     private void CloseButton_Click(object sender, RoutedEventArgs e)
     {
         Close();
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        base.OnClosed(e);
+        if (Application.Current.MainWindow?.DataContext is MainViewModel vm)
+        {
+            vm.ReloadSettings();
+        }
     }
 }

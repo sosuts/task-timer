@@ -35,9 +35,6 @@ public partial class TaskRecord : ObservableObject
     private TimeSpan _pausedDuration = TimeSpan.Zero;
 
     [ObservableProperty]
-    private string _processName = string.Empty;
-
-    [ObservableProperty]
     private string _contextInfo = string.Empty;
 
     /// <summary>

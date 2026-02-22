@@ -48,12 +48,14 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private int _selectedLanguageIndex;
 
-    public string[] FontSizeOptions { get; } = [
+    public string[] FontSizeOptions =>
+    [
         LocalizationService.GetString("FontSizeSmall"),
         LocalizationService.GetString("FontSizeMedium"),
         LocalizationService.GetString("FontSizeLarge")
     ];
-    public string[] LanguageOptions { get; } = [
+    public string[] LanguageOptions =>
+    [
         LocalizationService.GetString("LanguageEnglish"),
         LocalizationService.GetString("LanguageJapanese")
     ];
@@ -165,6 +167,8 @@ public partial class SettingsViewModel : ObservableObject
         _settings.OutlookCalendarName = OutlookCalendarName;
         _settings.FontSize = (FontSizePreference)SelectedFontSizeIndex;
         _settings.Language = (LanguagePreference)SelectedLanguageIndex;
+
+        LocalizationService.ApplyLanguage(_settings.Language);
 
         _settings.BrowserDomainMappings.Clear();
         foreach (var m in BrowserDomainMappings)
