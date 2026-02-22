@@ -583,6 +583,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    partial void OnIsAutoDetectEnabledChanged(bool value)
+    {
+        if (value)
+        {
+            // 再有効化時に内部状態をリセットして現在のプロセスを即時再検知する
+            _processMonitor.ResetDetectionState();
+        }
+    }
+
     public void Dispose()
     {
         _tickTimer.Stop();

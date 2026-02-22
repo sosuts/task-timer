@@ -65,7 +65,20 @@ public class ProcessMonitorService : IDisposable
     public void Start()
     {
         if (!_disposed)
+        {
             _timer.Start();
+            CheckActiveProcess(null, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>
+    /// 内部の検知状態をリセットする（次回チェック時に再検知が行われる）。
+    /// このクラスは DispatcherTimer を使用するため、すべてのメソッドは UI スレッドから呼び出すこと。
+    /// </summary>
+    public void ResetDetectionState()
+    {
+        _currentDetectedCategory = null;
+        _currentWindowTitle = string.Empty;
     }
 
     public void Stop() => _timer.Stop();
