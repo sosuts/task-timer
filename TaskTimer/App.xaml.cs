@@ -47,6 +47,8 @@ public partial class App : Application
         {
             ToolTipText = LocalizationService.GetString("AppTitle"),
         };
+        // コードで生成した場合はForceCreate()でシステムトレイへ登録する
+        _notifyIcon.ForceCreate(enablesEfficiencyMode: false);
 
         // コンテキストメニュー
         var contextMenu = new System.Windows.Controls.ContextMenu();

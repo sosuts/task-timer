@@ -96,7 +96,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _isAlwaysOnTop = _settings.AlwaysOnTop;
         LocalizationService.ApplyLanguage(_settings.Language);
         ApplyFontSize(_settings.FontSize);
-
+        StatusMessage = LocalizationService.GetString("StatusReady");
         _idleService = new IdleDetectionService(_settings.IdleThresholdSeconds);
         _idleService.IdleStarted += OnIdleStarted;
         _idleService.IdleEnded += OnIdleEnded;
