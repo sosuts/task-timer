@@ -240,6 +240,32 @@ public partial class MainViewModel : ObservableObject, IDisposable
             ActiveTask.DetectedUrl = e.BrowserUrl;
             ActiveTask.DetectedTabTitle = e.WindowTitle;
             ActiveTask.DetectedDocumentName = e.DocumentName;
+            if (string.IsNullOrEmpty(ActiveTask.ContextKey))
+                ActiveTask.ContextKey = e.ContextKey;
+            return;
+        }
+
+        // 一時停止中で同一コンテキストなら再開して再利用
+        if (ActiveTask is { State: TaskState.Paused } &&
+            ActiveTask.Category == e.Category &&
+            string.Equals(ActiveTask.ContextKey, e.ContextKey, StringComparison.OrdinalIgnoreCase))
+        {
+            if (ActiveTask.PauseStartTime != null)
+            {
+                ActiveTask.PausedDuration += DateTime.Now - ActiveTask.PauseStartTime.Value;
+                ActiveTask.PauseStartTime = null;
+            }
+
+            ActiveTask.State = TaskState.Running;
+            ActiveTask.ProcessName = e.ProcessName;
+            ActiveTask.DetectedUrl = e.BrowserUrl;
+            ActiveTask.DetectedTabTitle = e.WindowTitle;
+            ActiveTask.DetectedDocumentName = e.DocumentName;
+            if (string.IsNullOrEmpty(ActiveTask.ContextKey))
+                ActiveTask.ContextKey = e.ContextKey;
+
+            StatusMessage = $"{ActiveTask.TaskName}";
+            AutoDetectStatus = e.DefaultLabel;
             return;
         }
 
@@ -259,6 +285,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
             recentStopped.PauseStartTime = null;
             recentStopped.ProcessName = e.ProcessName;
             recentStopped.ContextInfo = e.ContextInfo;
+            recentStopped.ContextKey = string.IsNullOrEmpty(recentStopped.ContextKey)
+                ? e.ContextKey
+                : recentStopped.ContextKey;
+            recentStopped.DetectedUrl = e.BrowserUrl;
+            recentStopped.DetectedTabTitle = e.WindowTitle;
+            recentStopped.DetectedDocumentName = e.DocumentName;
             ActiveTask = recentStopped;
             StatusMessage = $"{recentStopped.TaskName}";
             AutoDetectStatus = e.DefaultLabel;
@@ -283,7 +315,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
             State = TaskState.Running,
             StartTime = DateTime.Now,
             ProcessName = e.ProcessName,
-            ContextInfo = e.ContextInfo
+            ContextInfo = e.ContextInfo,
+            ContextKey = e.ContextKey,
+            DetectedUrl = e.BrowserUrl,
+            DetectedTabTitle = e.WindowTitle,
+            DetectedDocumentName = e.DocumentName
         };
 
         Tasks.Add(task);

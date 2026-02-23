@@ -474,7 +474,8 @@ public class ProcessMonitorService : IDisposable
             // フォールバック: ウィンドウタイトルから抽出
             var parts = SplitWindowTitle(windowTitle);
             if (parts.Length >= 2)
-                return parts[^2];
+                // join parts
+                return string.Join(" - ", parts);
             return windowTitle;
         }
 
