@@ -10,14 +10,57 @@ namespace TaskTimer.Services;
 /// </summary>
 public class ProcessMonitorService : IDisposable
 {
+    private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+
     [DllImport("user32.dll")]
     private static extern IntPtr GetForegroundWindow();
 
     [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool IsWindowVisible(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
     private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetWindowPlacement(IntPtr hWnd, ref WINDOWPLACEMENT lpwndpl);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder text, int count);
+
+    private const int SwShowMinimized = 2;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT
+    {
+        public int X;
+        public int Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct WINDOWPLACEMENT
+    {
+        public uint length;
+        public uint flags;
+        public uint showCmd;
+        public POINT ptMinPosition;
+        public POINT ptMaxPosition;
+        public RECT rcNormalPosition;
+    }
 
     private readonly System.Windows.Threading.DispatcherTimer _timer;
     private readonly AppSettings _settings;
@@ -85,109 +128,136 @@ public class ProcessMonitorService : IDisposable
 
     public void Stop() => _timer.Stop();
 
+    private static List<IntPtr> EnumerateVisibleNonMinimizedTopLevelWindows()
+    {
+        var windows = new List<IntPtr>();
+
+        EnumWindows((hWnd, _) =>
+        {
+            if (!IsWindowVisible(hWnd))
+                return true;
+
+            var placement = new WINDOWPLACEMENT
+            {
+                length = (uint)Marshal.SizeOf<WINDOWPLACEMENT>()
+            };
+
+            if (GetWindowPlacement(hWnd, ref placement) && placement.showCmd == SwShowMinimized)
+                return true;
+
+            windows.Add(hWnd);
+            return true;
+        }, IntPtr.Zero);
+
+        return windows;
+    }
+
     private void CheckActiveProcess(object? sender, EventArgs e)
     {
         if (_disposed) return;
 
         try
         {
-            // フォアグラウンドウィンドウ（ユーザーが操作中のウィンドウ）を取得
-            var hwnd = GetForegroundWindow();
-            if (hwnd == IntPtr.Zero)
+            // まずフォアグラウンドを優先し、その後に可視・非最小化ウィンドウを走査する
+            var targets = new List<IntPtr>();
+            var foreground = GetForegroundWindow();
+            if (foreground != IntPtr.Zero)
+                targets.Add(foreground);
+
+            foreach (var hWnd in EnumerateVisibleNonMinimizedTopLevelWindows())
             {
-                FireTaskLostIfNeeded();
-                return;
+                if (hWnd != foreground)
+                    targets.Add(hWnd);
             }
 
-            GetWindowThreadProcessId(hwnd, out var pid);
-            if (pid == 0)
+            foreach (var hwnd in targets)
             {
-                FireTaskLostIfNeeded();
-                return;
-            }
+                GetWindowThreadProcessId(hwnd, out var pid);
+                if (pid == 0)
+                    continue;
 
-            Process? process = null;
-            try
-            {
-                process = Process.GetProcessById((int)pid);
-            }
-            catch (ArgumentException) { FireTaskLostIfNeeded(); return; }
-            catch (InvalidOperationException) { FireTaskLostIfNeeded(); return; }
-
-            var processName = process.ProcessName;
-            var sb = new System.Text.StringBuilder(512);
-            GetWindowText(hwnd, sb, sb.Capacity);
-            var windowTitle = sb.ToString();
-
-            var mapping = FindMapping(processName, windowTitle);
-            if (mapping == null)
-            {
-                FireTaskLostIfNeeded();
-                return;
-            }
-
-            var category = mapping.Category;
-
-            // ブラウザの場合、UIAutomationでURLを取得してドメインマッチを確認
-            if (mapping.Category == TaskCategory.CodeReview && BrowserProcessNames.Contains(processName))
-            {
-                var browserUrl = GetBrowserUrl(hwnd, processName);
-
-                if (_lastDetectedBrowserUrl != browserUrl)
+                Process? process = null;
+                try
                 {
-                    _lastDetectedBrowserUrl = browserUrl;
-                    BrowserTitleChanged?.Invoke(this, browserUrl);
+                    process = Process.GetProcessById((int)pid);
                 }
+                catch (ArgumentException) { continue; }
+                catch (InvalidOperationException) { continue; }
 
-                var domainMapping = FindBrowserDomainMapping(browserUrl);
-                if (domainMapping == null)
+                var processName = process.ProcessName;
+                var sb = new System.Text.StringBuilder(512);
+                GetWindowText(hwnd, sb, sb.Capacity);
+                var windowTitle = sb.ToString();
+
+                var mapping = FindMapping(processName, windowTitle);
+                if (mapping == null)
+                    continue;
+
+                var category = mapping.Category;
+
+                // ブラウザの場合、UIAutomationでURLを取得してドメインマッチを確認
+                if (mapping.Category == TaskCategory.CodeReview && BrowserProcessNames.Contains(processName))
                 {
-                    FireTaskLostIfNeeded();
+                    var browserUrl = GetBrowserUrl(hwnd, processName);
+
+                    if (_lastDetectedBrowserUrl != browserUrl)
+                    {
+                        _lastDetectedBrowserUrl = browserUrl;
+                        BrowserTitleChanged?.Invoke(this, browserUrl);
+                    }
+
+                    var domainMapping = FindBrowserDomainMapping(browserUrl);
+                    if (domainMapping == null)
+                        continue;
+
+                    if (_currentDetectedCategory != category || _currentWindowTitle != browserUrl)
+                    {
+                        _currentDetectedCategory = category;
+                        _currentWindowTitle = browserUrl;
+                        var contextInfo = GetContextInfo(processName, windowTitle, browserUrl);
+                        TaskDetected?.Invoke(this, new TaskDetectedEventArgs
+                        {
+                            Category = category,
+                            WindowTitle = windowTitle,
+                            ProcessName = processName,
+                            DefaultLabel = domainMapping.TaskName,
+                            ContextInfo = contextInfo,
+                            ContextKey = contextInfo,
+                            BrowserUrl = browserUrl
+                        });
+                    }
+
                     return;
                 }
 
-                if (_currentDetectedCategory != category || _currentWindowTitle != browserUrl)
+                // ブラウザ以外
+                if (_lastDetectedBrowserUrl != string.Empty)
+                {
+                    _lastDetectedBrowserUrl = string.Empty;
+                    BrowserTitleChanged?.Invoke(this, string.Empty);
+                }
+
+                if (_currentDetectedCategory != category || _currentWindowTitle != windowTitle)
                 {
                     _currentDetectedCategory = category;
-                    _currentWindowTitle = browserUrl;
-                    var contextInfo = GetContextInfo(processName, windowTitle, browserUrl);
+                    _currentWindowTitle = windowTitle;
+                    var contextInfo2 = GetContextInfo(processName, windowTitle, string.Empty);
                     TaskDetected?.Invoke(this, new TaskDetectedEventArgs
                     {
                         Category = category,
                         WindowTitle = windowTitle,
                         ProcessName = processName,
-                        DefaultLabel = domainMapping.TaskName,
-                        ContextInfo = contextInfo,
-                        ContextKey = contextInfo,
-                        BrowserUrl = browserUrl
+                        DefaultLabel = mapping.DefaultLabel,
+                        ContextInfo = contextInfo2,
+                        ContextKey = contextInfo2,
+                        DocumentName = contextInfo2
                     });
                 }
+
                 return;
             }
 
-            // ブラウザ以外
-            if (_lastDetectedBrowserUrl != string.Empty)
-            {
-                _lastDetectedBrowserUrl = string.Empty;
-                BrowserTitleChanged?.Invoke(this, string.Empty);
-            }
-
-            if (_currentDetectedCategory != category || _currentWindowTitle != windowTitle)
-            {
-                _currentDetectedCategory = category;
-                _currentWindowTitle = windowTitle;
-                var contextInfo2 = GetContextInfo(processName, windowTitle, string.Empty);
-                TaskDetected?.Invoke(this, new TaskDetectedEventArgs
-                {
-                    Category = category,
-                    WindowTitle = windowTitle,
-                    ProcessName = processName,
-                    DefaultLabel = mapping.DefaultLabel,
-                    ContextInfo = contextInfo2,
-                    ContextKey = contextInfo2,
-                    DocumentName = contextInfo2
-                });
-            }
+            FireTaskLostIfNeeded();
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or UnauthorizedAccessException)
         {
