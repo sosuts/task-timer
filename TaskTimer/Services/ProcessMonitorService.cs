@@ -83,6 +83,11 @@ public class ProcessMonitorService : IDisposable
     public event EventHandler<TaskDetectedEventArgs>? TaskDetected;
 
     /// <summary>
+    /// 1回の監視サイクルで検知されたタスクキー一覧を通知
+    /// </summary>
+    public event EventHandler<DetectedTaskKeysEventArgs>? TaskDetectionCycleCompleted;
+
+    /// <summary>
     /// 監視対象外のプロセスがアクティブになったときに発火
     /// </summary>
     public event EventHandler? TaskLost;
@@ -160,6 +165,7 @@ public class ProcessMonitorService : IDisposable
         {
             // まずフォアグラウンドを優先し、その後に可視・非最小化ウィンドウを走査する
             var targets = new List<IntPtr>();
+            var detectedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var foreground = GetForegroundWindow();
             if (foreground != IntPtr.Zero)
                 targets.Add(foreground);
@@ -210,24 +216,28 @@ public class ProcessMonitorService : IDisposable
                     if (domainMapping == null)
                         continue;
 
-                    if (_currentDetectedCategory != category || _currentWindowTitle != browserUrl)
-                    {
-                        _currentDetectedCategory = category;
-                        _currentWindowTitle = browserUrl;
-                        var contextInfo = GetContextInfo(processName, windowTitle, browserUrl);
-                        TaskDetected?.Invoke(this, new TaskDetectedEventArgs
-                        {
-                            Category = category,
-                            WindowTitle = windowTitle,
-                            ProcessName = processName,
-                            DefaultLabel = domainMapping.TaskName,
-                            ContextInfo = contextInfo,
-                            ContextKey = contextInfo,
-                            BrowserUrl = browserUrl
-                        });
-                    }
+                    var contextInfo = GetContextInfo(processName, windowTitle, browserUrl);
+                    var documentName = ExtractBrowserRepoPath(browserUrl);
+                    var contextKey = string.IsNullOrWhiteSpace(documentName) ? contextInfo : documentName;
+                    var detectionKey = BuildDetectionKey(category, contextKey);
+                    if (!detectedKeys.Add(detectionKey))
+                        continue;
 
-                    return;
+                    _currentDetectedCategory = category;
+                    _currentWindowTitle = browserUrl;
+                    TaskDetected?.Invoke(this, new TaskDetectedEventArgs
+                    {
+                        Category = category,
+                        WindowTitle = windowTitle,
+                        ProcessName = processName,
+                        DefaultLabel = domainMapping.TaskName,
+                        ContextInfo = contextInfo,
+                        ContextKey = contextKey,
+                        BrowserUrl = browserUrl,
+                        DocumentName = documentName
+                    });
+
+                    continue;
                 }
 
                 // ブラウザ以外
@@ -237,32 +247,43 @@ public class ProcessMonitorService : IDisposable
                     BrowserTitleChanged?.Invoke(this, string.Empty);
                 }
 
-                if (_currentDetectedCategory != category || _currentWindowTitle != windowTitle)
-                {
-                    _currentDetectedCategory = category;
-                    _currentWindowTitle = windowTitle;
-                    var contextInfo2 = GetContextInfo(processName, windowTitle, string.Empty);
-                    TaskDetected?.Invoke(this, new TaskDetectedEventArgs
-                    {
-                        Category = category,
-                        WindowTitle = windowTitle,
-                        ProcessName = processName,
-                        DefaultLabel = mapping.DefaultLabel,
-                        ContextInfo = contextInfo2,
-                        ContextKey = contextInfo2,
-                        DocumentName = contextInfo2
-                    });
-                }
+                _currentDetectedCategory = category;
+                _currentWindowTitle = windowTitle;
+                var contextInfo2 = GetContextInfo(processName, windowTitle, string.Empty);
+                var documentName2 = ExtractDocumentName(processName, windowTitle);
+                var contextKey2 = ExtractContextKey(processName, windowTitle, documentName2);
+                if (string.IsNullOrWhiteSpace(contextKey2))
+                    contextKey2 = contextInfo2;
 
-                return;
+                var detectionKey2 = BuildDetectionKey(category, contextKey2);
+                if (!detectedKeys.Add(detectionKey2))
+                    continue;
+
+                TaskDetected?.Invoke(this, new TaskDetectedEventArgs
+                {
+                    Category = category,
+                    WindowTitle = windowTitle,
+                    ProcessName = processName,
+                    DefaultLabel = mapping.DefaultLabel,
+                    ContextInfo = contextInfo2,
+                    ContextKey = contextKey2,
+                    DocumentName = documentName2
+                });
             }
 
-            FireTaskLostIfNeeded();
+            TaskDetectionCycleCompleted?.Invoke(this, new DetectedTaskKeysEventArgs(detectedKeys));
+            if (detectedKeys.Count == 0)
+                FireTaskLostIfNeeded();
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or UnauthorizedAccessException)
         {
             // Win32 APIやアクセス権限の問題は無視
         }
+    }
+
+    private static string BuildDetectionKey(TaskCategory category, string contextKey)
+    {
+        return $"{category}|{contextKey}";
     }
 
     private void FireTaskLostIfNeeded()
@@ -720,4 +741,15 @@ public class TaskDetectedEventArgs : EventArgs
     public string ContextKey { get; set; } = string.Empty;
     public string BrowserUrl { get; set; } = string.Empty;
     public string DocumentName { get; set; } = string.Empty;
+}
+
+public class DetectedTaskKeysEventArgs : EventArgs
+{
+    public DetectedTaskKeysEventArgs(IEnumerable<string> keys)
+    {
+        Keys = keys?.ToHashSet(StringComparer.OrdinalIgnoreCase)
+            ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    public HashSet<string> Keys { get; }
 }

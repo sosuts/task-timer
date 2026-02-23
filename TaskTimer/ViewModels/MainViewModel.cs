@@ -103,6 +103,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         _processMonitor = new ProcessMonitorService(_settings);
         _processMonitor.TaskDetected += OnTaskDetected;
+        _processMonitor.TaskDetectionCycleCompleted += OnTaskDetectionCycleCompleted;
         _processMonitor.TaskLost += OnTaskLost;
         _processMonitor.BrowserTitleChanged += OnBrowserTitleChanged;
 
@@ -146,6 +147,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _processMonitor.Dispose();
         _processMonitor = new ProcessMonitorService(_settings);
         _processMonitor.TaskDetected += OnTaskDetected;
+        _processMonitor.TaskDetectionCycleCompleted += OnTaskDetectionCycleCompleted;
         _processMonitor.TaskLost += OnTaskLost;
         _processMonitor.BrowserTitleChanged += OnBrowserTitleChanged;
         _processMonitor.Start();
@@ -165,9 +167,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private void OnTick(object? sender, EventArgs e)
     {
+        foreach (var runningTask in Tasks.Where(t => t.State == TaskState.Running))
+        {
+            runningTask.Elapsed = DateTime.Now - runningTask.StartTime - runningTask.PausedDuration;
+        }
+
         if (ActiveTask is { State: TaskState.Running })
         {
-            ActiveTask.Elapsed = DateTime.Now - ActiveTask.StartTime - ActiveTask.PausedDuration;
             var ts = ActiveTask.Elapsed;
             CurrentElapsedDisplay = ts.TotalHours >= 1
                 ? ts.ToString(@"h\:mm\:ss")
@@ -230,6 +236,51 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         if (!IsAutoDetectEnabled) return;
 
+        var existingRunning = Tasks.FirstOrDefault(t =>
+            t.State == TaskState.Running &&
+            t.Category == e.Category &&
+            string.Equals(t.ContextKey, e.ContextKey, StringComparison.OrdinalIgnoreCase));
+
+        if (existingRunning != null)
+        {
+            AutoDetectStatus = e.DefaultLabel;
+            existingRunning.ProcessName = e.ProcessName;
+            existingRunning.DetectedUrl = e.BrowserUrl;
+            existingRunning.DetectedTabTitle = e.WindowTitle;
+            existingRunning.DetectedDocumentName = e.DocumentName;
+            if (string.IsNullOrEmpty(existingRunning.ContextKey))
+                existingRunning.ContextKey = e.ContextKey;
+            ActiveTask = existingRunning;
+            return;
+        }
+
+        var existingPaused = Tasks.FirstOrDefault(t =>
+            t.State == TaskState.Paused &&
+            t.Category == e.Category &&
+            string.Equals(t.ContextKey, e.ContextKey, StringComparison.OrdinalIgnoreCase));
+
+        if (existingPaused != null)
+        {
+            if (existingPaused.PauseStartTime != null)
+            {
+                existingPaused.PausedDuration += DateTime.Now - existingPaused.PauseStartTime.Value;
+                existingPaused.PauseStartTime = null;
+            }
+
+            existingPaused.State = TaskState.Running;
+            existingPaused.ProcessName = e.ProcessName;
+            existingPaused.DetectedUrl = e.BrowserUrl;
+            existingPaused.DetectedTabTitle = e.WindowTitle;
+            existingPaused.DetectedDocumentName = e.DocumentName;
+            if (string.IsNullOrEmpty(existingPaused.ContextKey))
+                existingPaused.ContextKey = e.ContextKey;
+
+            ActiveTask = existingPaused;
+            StatusMessage = $"{existingPaused.TaskName}";
+            AutoDetectStatus = e.DefaultLabel;
+            return;
+        }
+
         // 同じカテゴリ＆同じコンテキストのタスクが実行中なら詳細情報のみ更新
         if (ActiveTask is { State: TaskState.Running } &&
             ActiveTask.Category == e.Category &&
@@ -273,12 +324,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         var recentStopped = FindRecentStoppedTask(e.Category, e.ContextKey);
         if (recentStopped != null)
         {
-            // 現在のタスクを停止
-            if (ActiveTask is { State: TaskState.Running or TaskState.Paused })
-            {
-                StopCurrentTask();
-            }
-
             // 停止済みタスクを再開
             recentStopped.State = TaskState.Running;
             recentStopped.EndTime = null;
@@ -295,11 +340,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
             StatusMessage = $"{recentStopped.TaskName}";
             AutoDetectStatus = e.DefaultLabel;
             return;
-        }
-
-        if (ActiveTask is { State: TaskState.Running or TaskState.Paused })
-        {
-            StopCurrentTask();
         }
 
         // コンテキストキーに基づいたタスク名を生成
@@ -357,15 +397,48 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         if (!IsAutoDetectEnabled) return;
 
-        AutoDetectStatus = "";
+        AutoDetectStatus = string.Empty;
+    }
 
-        if (ActiveTask is { State: TaskState.Running } &&
-            ActiveTask.TaskName.StartsWith("[Auto]"))
+    private void OnTaskDetectionCycleCompleted(object? sender, DetectedTaskKeysEventArgs e)
+    {
+        if (!IsAutoDetectEnabled) return;
+
+        var now = DateTime.Now;
+        var toStop = Tasks
+            .Where(t => t.State == TaskState.Running)
+            .Where(t => t.TaskName.StartsWith("[Auto]", StringComparison.Ordinal))
+            .Where(t => !e.Keys.Contains(BuildDetectionKey(t.Category, t.ContextKey)))
+            .ToList();
+
+        foreach (var task in toStop)
         {
-            StopCurrentTask();
-            StatusMessage = LocalizationService.GetString("StatusReady");
-            CurrentElapsedDisplay = "00:00";
+            StopTaskRecord(task, now);
         }
+
+        if (ActiveTask != null && toStop.Contains(ActiveTask))
+        {
+            ActiveTask = Tasks
+                .Where(t => t.State == TaskState.Running)
+                .OrderByDescending(t => t.StartTime)
+                .FirstOrDefault();
+
+            if (ActiveTask == null)
+            {
+                StatusMessage = LocalizationService.GetString("StatusReady");
+                CurrentElapsedDisplay = "00:00";
+            }
+        }
+
+        if (toStop.Count > 0)
+        {
+            TaskSessionService.Save(Tasks);
+        }
+    }
+
+    private static string BuildDetectionKey(TaskCategory category, string contextKey)
+    {
+        return $"{category}|{contextKey}";
     }
 
     private void OnBrowserTitleChanged(object? sender, string title)
@@ -577,17 +650,25 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         if (ActiveTask == null) return;
 
-        if (ActiveTask.State == TaskState.Paused && ActiveTask.PauseStartTime != null)
-        {
-            ActiveTask.PausedDuration += DateTime.Now - ActiveTask.PauseStartTime.Value;
-            ActiveTask.PauseStartTime = null;
-        }
-
-        ActiveTask.State = TaskState.Stopped;
-        ActiveTask.EndTime = DateTime.Now;
-        ActiveTask.Elapsed = ActiveTask.EndTime.Value - ActiveTask.StartTime - ActiveTask.PausedDuration;
+        StopTaskRecord(ActiveTask, DateTime.Now);
         ActiveTask = null;
         TaskSessionService.Save(Tasks);
+    }
+
+    private static void StopTaskRecord(TaskRecord task, DateTime endTime)
+    {
+        if (task.State != TaskState.Running && task.State != TaskState.Paused)
+            return;
+
+        if (task.State == TaskState.Paused && task.PauseStartTime != null)
+        {
+            task.PausedDuration += endTime - task.PauseStartTime.Value;
+            task.PauseStartTime = null;
+        }
+
+        task.State = TaskState.Stopped;
+        task.EndTime = endTime;
+        task.Elapsed = task.EndTime.Value - task.StartTime - task.PausedDuration;
     }
 
     private void ApplyFontSize(FontSizePreference pref)
