@@ -19,7 +19,7 @@ public static class CsvExportService
             var dir = GetSafeOutputDirectory(outputDirectory);
             Directory.CreateDirectory(dir);
 
-            var filePath = Path.Combine(dir, $"tasks_{DateTime.Now:yyyyMMdd}.csv");
+            var filePath = Path.Combine(dir, $"tasks_{DateTime.Today:yyyyMMdd}.csv");
 
             var sb = new StringBuilder();
             sb.AppendLine(TaskRecord.CsvHeader);
