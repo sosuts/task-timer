@@ -153,6 +153,22 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _processMonitor.Start();
     }
 
+    /// <summary>
+    /// スリープ復帰後にタイマーが停止していた場合に再起動する
+    /// </summary>
+    public void OnSystemResumed()
+    {
+        // DispatcherTimer はスリープ中に停止することがあるため、念のため再起動する
+        if (!_tickTimer.IsEnabled)
+            _tickTimer.Start();
+        if (!_clockTimer.IsEnabled)
+            _clockTimer.Start();
+        if (!_idleService.IsRunning)
+            _idleService.Start();
+        if (!_processMonitor.IsRunning)
+            _processMonitor.Start();
+    }
+
     private void OnClockTick(object? sender, EventArgs e)
     {
         UpdateClock();

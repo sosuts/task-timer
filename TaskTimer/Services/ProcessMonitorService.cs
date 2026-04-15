@@ -112,6 +112,8 @@ public class ProcessMonitorService : IDisposable
         _timer.Tick += CheckActiveProcess;
     }
 
+    public bool IsRunning => !_disposed && _timer.IsEnabled;
+
     public void Start()
     {
         if (!_disposed)
@@ -275,9 +277,11 @@ public class ProcessMonitorService : IDisposable
             if (detectedKeys.Count == 0)
                 FireTaskLostIfNeeded();
         }
-        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or UnauthorizedAccessException)
+        catch (Exception ex)
         {
-            // Win32 APIやアクセス権限の問題は無視
+            // Win32 API / UIAutomation / COM など、スリープ復帰後を含む
+            // あらゆる例外を捕捉してDispatcherTimerを継続させる
+            System.Diagnostics.Debug.WriteLine($"[ProcessMonitor] CheckActiveProcess exception: {ex}");
         }
     }
 

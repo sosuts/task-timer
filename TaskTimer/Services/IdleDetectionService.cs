@@ -36,21 +36,30 @@ public class IdleDetectionService : IDisposable
         _timer.Tick += CheckIdleState;
     }
 
+    public bool IsRunning => _timer.IsEnabled;
+
     public void Start() => _timer.Start();
     public void Stop() => _timer.Stop();
 
     private void CheckIdleState(object? sender, EventArgs e)
     {
-        var idleTime = GetIdleTimeMs();
-        if (idleTime >= _idleThresholdMs && !_isIdle)
+        try
         {
-            _isIdle = true;
-            IdleStarted?.Invoke(this, EventArgs.Empty);
+            var idleTime = GetIdleTimeMs();
+            if (idleTime >= _idleThresholdMs && !_isIdle)
+            {
+                _isIdle = true;
+                IdleStarted?.Invoke(this, EventArgs.Empty);
+            }
+            else if (idleTime < _idleThresholdMs && _isIdle)
+            {
+                _isIdle = false;
+                IdleEnded?.Invoke(this, EventArgs.Empty);
+            }
         }
-        else if (idleTime < _idleThresholdMs && _isIdle)
+        catch (Exception ex)
         {
-            _isIdle = false;
-            IdleEnded?.Invoke(this, EventArgs.Empty);
+            System.Diagnostics.Debug.WriteLine($"[IdleDetection] CheckIdleState exception: {ex}");
         }
     }
 
