@@ -1,7 +1,9 @@
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Threading;
 using H.NotifyIcon;
+using Microsoft.Win32;
 using TaskTimer.Models;
 using TaskTimer.Services;
 
@@ -18,6 +20,14 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        // 予期しない例外でプロセスが終了しないようにグローバルハンドラを登録する
+        DispatcherUnhandledException += OnDispatcherUnhandledException;
+        AppDomain.CurrentDomain.UnhandledException += OnDomainUnhandledException;
+        TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
+
+        // スリープ復帰時にDispatcherTimerが正常に動作し続けるよう監視する
+        SystemEvents.PowerModeChanged += OnPowerModeChanged;
+
         // 多重起動防止
         const string mutexName = "TaskTimer_SingleInstance_Mutex";
         _mutex = new Mutex(true, mutexName, out bool createdNew);
@@ -116,8 +126,54 @@ public partial class App : Application
         return clonedIcon;
     }
 
+    /// <summary>
+    /// UIスレッドでの未処理例外を捕捉してプロセスを継続させる
+    /// </summary>
+    private static void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+    {
+        System.Diagnostics.Debug.WriteLine($"[TaskTimer] DispatcherUnhandledException: {e.Exception}");
+        e.Handled = true;
+    }
+
+    /// <summary>
+    /// バックグラウンドスレッドでの未処理例外をログに記録する（プロセス終了は防げないが記録は残す）
+    /// </summary>
+    private static void OnDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        System.Diagnostics.Debug.WriteLine($"[TaskTimer] UnhandledException: {e.ExceptionObject}");
+    }
+
+    /// <summary>
+    /// Task内の未観測例外を捕捉してプロセスを継続させる
+    /// </summary>
+    private static void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    {
+        System.Diagnostics.Debug.WriteLine($"[TaskTimer] UnobservedTaskException: {e.Exception}");
+        e.SetObserved();
+    }
+
+    /// <summary>
+    /// スリープ復帰時にDispatcherTimerが動作していることを確認する
+    /// </summary>
+    private void OnPowerModeChanged(object sender, PowerModeChangedEventArgs e)
+    {
+        if (e.Mode == PowerModes.Resume)
+        {
+            System.Diagnostics.Debug.WriteLine("[TaskTimer] System resumed from sleep.");
+            // MainWindowのViewModelにスリープ復帰を通知してタイマーを再起動する
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (MainWindow?.DataContext is ViewModels.MainViewModel vm)
+                {
+                    vm.OnSystemResumed();
+                }
+            });
+        }
+    }
+
     protected override void OnExit(ExitEventArgs e)
     {
+        SystemEvents.PowerModeChanged -= OnPowerModeChanged;
         _notifyIcon?.Dispose();
         if (_ownsMutex)
         {
