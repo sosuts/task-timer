@@ -9,6 +9,34 @@ namespace TaskTimer.Services;
 /// </summary>
 public static class CsvExportService
 {
+    /// <summary>
+    /// 定期自動保存用の固定パスにCSVを上書き保存する
+    /// </summary>
+    public static void SavePeriodic(IEnumerable<TaskRecord> records, string? outputDirectory = null)
+    {
+        try
+        {
+            var dir = GetSafeOutputDirectory(outputDirectory);
+            Directory.CreateDirectory(dir);
+
+            var filePath = Path.Combine(dir, $"tasks_{DateTime.Now:yyyyMMdd}.csv");
+
+            var sb = new StringBuilder();
+            sb.AppendLine(TaskRecord.CsvHeader);
+
+            foreach (var record in records)
+            {
+                sb.AppendLine(record.ToCsvLine());
+            }
+
+            File.WriteAllText(filePath, sb.ToString(), Encoding.UTF8);
+        }
+        catch
+        {
+            // 保存失敗は無視
+        }
+    }
+
     public static string Export(IEnumerable<TaskRecord> records, string? outputDirectory = null)
     {
         var dir = GetSafeOutputDirectory(outputDirectory);

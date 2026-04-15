@@ -182,12 +182,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         UpdateTotalFocusTime();
 
-        // 1分ごとにセッションを自動保存
+        // 1分ごとにセッションを自動保存（JSON + CSV）
         _autoSaveCounter++;
         if (_autoSaveCounter >= 60)
         {
             _autoSaveCounter = 0;
             TaskSessionService.Save(Tasks);
+            CsvExportService.SavePeriodic(Tasks, _settings.CsvOutputDirectory);
         }
     }
 
